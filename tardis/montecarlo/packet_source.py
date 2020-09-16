@@ -9,7 +9,7 @@ class BasePacketSource(abc.ABC):
 
     def __init__(self, seed):
         self.seed = 1963#seed
-        np.random.seed(seed)
+        #np.random.seed(seed)
 
     @abc.abstractmethod
     def create_packets(self, seed=None, **kwargs):
