@@ -8,7 +8,7 @@ from tardis import constants as const
 class BasePacketSource(abc.ABC):
 
     def __init__(self, seed):
-        self.seed = seed
+        self.seed = 1963#seed
         np.random.seed(seed)
 
     @abc.abstractmethod

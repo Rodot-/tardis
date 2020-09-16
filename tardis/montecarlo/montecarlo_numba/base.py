@@ -60,13 +60,15 @@ def montecarlo_main_loop(packet_collection, numba_model, numba_plasma,
     delta_nu = spectrum_frequency[1] - spectrum_frequency[0]
 
     print("Running post-merge numba montecarlo (with C close lines)!")
+    seed = 1963
+    np.random.seed(seed)
     for i in prange(len(output_nus)):
-        if montecarlo_configuration.single_packet_seed != -1:
-            seed = packet_seeds[montecarlo_configuration.single_packet_seed]
-            np.random.seed(seed)
-        else:
-            seed = packet_seeds[i]
-            np.random.seed(seed)
+        #if montecarlo_configuration.single_packet_seed != -1:
+        #    #seed = packet_seeds[montecarlo_configuration.single_packet_seed]
+        #    #np.random.seed(seed)
+        #else:
+        #    #seed = packet_seeds[i]
+        #    #np.random.seed(seed)
         r_packet = RPacket(numba_model.r_inner[0],
                            packet_collection.packets_input_mu[i],
                            packet_collection.packets_input_nu[i],

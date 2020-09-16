@@ -68,9 +68,9 @@ class MontecarloRunner(HDFWriterMixin):
                  packet_source=None, debug_packets=False,
                  logger_buffer=1, single_packet_seed=None):
 
-        self.seed = seed
+        self.seed = 1963#seed
         if packet_source is None:
-            self.packet_source = source.BlackBodySimpleSource(seed)
+            self.packet_source = source.BlackBodySimpleSource(1963)
         else:
             self.packet_source = packet_source
         # inject different packets
@@ -82,11 +82,11 @@ class MontecarloRunner(HDFWriterMixin):
         self.inner_boundary_albedo = inner_boundary_albedo
         self.enable_full_relativity = enable_full_relativity
         self.line_interaction_type = line_interaction_type
-        self.single_packet_seed = single_packet_seed
+        self.single_packet_seed = 1963#single_packet_seed
         self.integrator_settings = integrator_settings
         self.v_packet_settings = v_packet_settings
         self.spectrum_method = spectrum_method
-        self.seed = seed
+        self.seed = 1963#seed
         self._integrator = None
         self._spectrum_integrated = None
 
@@ -135,12 +135,12 @@ class MontecarloRunner(HDFWriterMixin):
         # for example. We seed the random module instead of the numpy module
         # because we call random.sample, which references a different internal
         # state than in the numpy.random module.
-        seed = self.seed + iteration
+        seed = 1963#self.seed + iteration
         rng = np.random.default_rng(seed=seed)
-        seeds = rng.choice(MAX_SEED_VAL,
-                           no_of_packets,
-                           replace=True
-                           )
+        seeds = np.ones(no_of_packets)*1963#rng.choice(MAX_SEED_VAL,
+        #                   no_of_packets,
+        #                   replace=True
+        #                   )
         nus, mus, energies = self.packet_source.create_packets(
                 T,
                 no_of_packets,
