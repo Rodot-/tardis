@@ -75,6 +75,9 @@ def montecarlo_main_loop(packet_collection, numba_model, numba_plasma,
                            packet_collection.packets_input_energy[i],
                            seed,
                            i)
+
+        print("In base.py")
+        print(r_packet.energy, r_packet.nu)
         vpacket_collection = VPacketCollection(
             spectrum_frequency, 
             montecarlo_configuration.v_packet_spawn_start_frequency,

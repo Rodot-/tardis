@@ -173,7 +173,8 @@ def get_inverse_doppler_factor_full_relativity(mu, beta):
 
 @njit(**njit_dict)
 def get_random_mu():
-    return 2.0 * np.random.random() - 1.0
+    #return 2.0 * np.random.random() - 1.0
+    return 0.0
 
 @jitclass(rpacket_spec)
 class RPacket(object):
@@ -268,7 +269,8 @@ def trace_packet(r_packet, numba_model, numba_plasma, estimators, sigma_thomson)
     start_line_id = r_packet.next_line_id
 
     # defining taus
-    tau_event = np.random.exponential()
+    #tau_event = np.random.exponential()
+    tau_event = 0.5
     tau_trace_line_combined = 0.0
 
     # e scattering initialization
@@ -388,29 +390,31 @@ def move_r_packet(r_packet, distance, time_explosion, numba_estimator):
     doppler_factor = get_doppler_factor(r_packet.r,
                                         r_packet.mu,
                                         time_explosion)
-    comov_nu = r_packet.nu * doppler_factor
-    comov_energy = r_packet.energy * doppler_factor
 
-    if montecarlo_configuration.full_relativity:
-        distance = distance * doppler_factor
-        set_estimators_full_relativity(r_packet,
-                                       distance,
-                                       numba_estimator,
-                                       comov_nu,
-                                       comov_energy,
-                                       doppler_factor)
-    else:
-        set_estimators(r_packet,
-                       distance,
-                       numba_estimator,
-                       comov_nu,
-                       comov_energy)
     r = r_packet.r
     if (distance > 0.0):
         new_r = np.sqrt(r**2 + distance**2 +
                          2.0 * r * distance * r_packet.mu)
         r_packet.mu = (r_packet.mu * r + distance) / new_r
         r_packet.r = new_r
+
+        comov_nu = r_packet.nu * doppler_factor
+        comov_energy = r_packet.energy * doppler_factor
+
+        if montecarlo_configuration.full_relativity:
+            distance = distance * doppler_factor
+            set_estimators_full_relativity(r_packet,
+                                           distance,
+                                           numba_estimator,
+                                           comov_nu,
+                                           comov_energy,
+                                           doppler_factor)
+        else:
+            set_estimators(r_packet,
+                           distance,
+                           numba_estimator,
+                           comov_nu,
+                           comov_energy)
 
 @njit(**njit_dict)
 def set_estimators(r_packet, distance, numba_estimator, comov_nu, comov_energy):

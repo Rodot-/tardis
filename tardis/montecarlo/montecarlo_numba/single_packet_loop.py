@@ -21,6 +21,20 @@ from tardis.montecarlo.montecarlo_numba.montecarlo_logger import log_decorator
 from tardis.montecarlo.montecarlo_numba import (
     montecarlo_logger as mc_logger)
 
+"""
+def njit(*args, **kwargs):
+    if len(args) > 1 or len(kwargs):
+        def decorator(func):
+            def wrapper(*args, **kwargs):
+                return func(*args, **kwargs)
+            return wrapper
+        return decorator
+    def wrapper(*args, **kwargs):
+        return func(*args, **kwargs)
+
+    return wrapper
+"""
+
 # @log_decorator
 @njit
 def single_packet_loop(r_packet, numba_model, numba_plasma, estimators,
@@ -49,6 +63,8 @@ def single_packet_loop(r_packet, numba_model, numba_plasma, estimators,
         set_packet_props_full_relativity(r_packet, numba_model)
     else:
         set_packet_props_partial_relativity(r_packet, numba_model)
+    print("In single_packet_loop")
+    print(r_packet.energy, r_packet.nu)
     r_packet.initialize_line_id(numba_plasma, numba_model)
 
     trace_vpacket_volley(r_packet, vpacket_collection, numba_model,
@@ -65,27 +81,50 @@ def single_packet_loop(r_packet, numba_model, numba_plasma, estimators,
         distance, interaction_type, delta_shell = trace_packet(
             r_packet, numba_model, numba_plasma, estimators, sigma_thomson)
 
+        print("IN PROCESS")
+        print(r_packet.energy, r_packet.nu)
 
         if interaction_type == InteractionType.BOUNDARY:
             move_r_packet(r_packet, distance, numba_model.time_explosion,
                           estimators)
+            print("BOUNDARY")
+            print(r_packet.energy, r_packet.nu)
             move_packet_across_shell_boundary(r_packet, delta_shell,
                                                        len(numba_model.r_inner))
+            print("CROSS BOUNDARY")
+            print(r_packet.energy, r_packet.nu)
 
         elif interaction_type == InteractionType.LINE:
+            print("LINE")
+            print(r_packet.energy, r_packet.nu)
+
             move_r_packet(r_packet, distance, numba_model.time_explosion,
                           estimators)
+
+            print("MOVE")
+            print(r_packet.energy, r_packet.nu)
             line_scatter(r_packet, numba_model.time_explosion,
                          line_interaction_type, numba_plasma)
             trace_vpacket_volley(
                 r_packet, vpacket_collection, numba_model, numba_plasma,
                 sigma_thomson)
 
+            print("LINE SCATTER")
+            print(r_packet.energy, r_packet.nu)
+
 
         elif interaction_type == InteractionType.ESCATTERING:
+            print("ESCATTER")
+            print(r_packet.energy, r_packet.nu, r_packet.r)
             move_r_packet(r_packet, distance, numba_model.time_explosion,
                           estimators)
+
+            print("MOVE")
+            print(r_packet.energy, r_packet.nu, r_packet.r)
             thomson_scatter(r_packet, numba_model.time_explosion)
+
+            print("E SCATTERED")
+            print(r_packet.energy, r_packet.nu, r_packet.r)
 
             trace_vpacket_volley(r_packet, vpacket_collection, numba_model,
                                  numba_plasma, sigma_thomson)
