@@ -28,7 +28,7 @@ if sys.version_info < tuple((int(val) for val in __minimum_python_version__.spli
 # Import ah_bootstrap after the python version validation
 
 import ah_bootstrap
-from setuptools import setup
+from setuptools import setup, Extension
 
 import builtins
 builtins._ASTROPY_SETUP_ = True
@@ -137,6 +137,7 @@ for root, dirs, files in os.walk(PACKAGENAME):
                     os.path.relpath(root, PACKAGENAME), filename))
 
 package_info['package_data'][PACKAGENAME].extend(c_files)
+#package_info['ext_modules'] = cythonize([Extension('montecarlo', ['tardis/montecarlo/montecarlo.pyx'])], gdb_debug=True)
 
 setup(name=PACKAGENAME + '-sn',
       version=VERSION,

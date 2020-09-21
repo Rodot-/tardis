@@ -4,6 +4,18 @@ import logging
 import warnings
 
 import pyne.data
+import numpy
+from numpy.random import random as random
+
+def fake_random(*args, **kwargs):
+
+    results = random(*args, **kwargs)
+    with open('random_log.log', 'a') as f:
+        f.write(str(results))
+    print("Rolling RNG")
+    return results
+
+numpy.random.random = fake_random
 
 from tardis.util.colored_logger import ColoredFormatter, formatter_message
 # Affiliated packages may add whatever they like to this file, but

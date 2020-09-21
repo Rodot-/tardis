@@ -59,7 +59,7 @@ class MontecarloRunner(HDFWriterMixin):
                  line_interaction_type, integrator_settings,
                  v_packet_settings, spectrum_method,
                  packet_source=None):
-
+        seed = 1963
         self.seed = seed
         if packet_source is None:
             self.packet_source = source.BlackBodySimpleSource(seed)

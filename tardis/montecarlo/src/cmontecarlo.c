@@ -12,7 +12,37 @@
 #include "rpacket.h"
 #include "cmontecarlo.h"
 
+#define printf_log(F, X) {FILE* flog = fopen("packet_logger.info", "a");\
+	                fprintf(flog, F, X);\
+	                fclose(flog);}  
+#define print_log(F) {FILE* flog = fopen("packet_logger.info", "a");\
+	                fprintf(flog, F);\
+	                fclose(flog);}  
+#define log_packet(packet) {FILE* flog = fopen("packet_logger.info", "a");\
+				fprintf(flog,"Logging Packet:\n"); \
+				fprintf(flog,"  r:%.16f\n", packet.r); \
+			    	fprintf(flog,"  mu:%.16f\n", packet.mu); \
+				fprintf(flog,"  nu:%.16f\n", packet.nu); \
+				fprintf(flog,"  energy:%.16f\n", packet.energy); \
+				fprintf(flog,"  current_shell_id:%d\n", packet.current_shell_id); \
+				fprintf(flog,"  status:%d\n", (int)packet.status); \
+				fprintf(flog,"  index:%d\n", packet.id); \
+				fprintf(flog,"  d_continuum:%f\n", packet.d_cont); \
+				fclose(flog);}
 
+#define rk_double_(X) (printf("Calling RNG at line %d\n", __LINE__),\
+		rk_double((X)) )
+
+#define rpacket_reset_tau_event_(X, Y) (printf("Calling RNG (reset_tau_event) at line %d\n", __LINE__),\
+		rpacket_reset_tau_event(X, Y) )
+
+/*
+inline double rk_double_(rk_state* state) {
+	printf("Calling RNG at line %d\n", __LINE__);
+	double result = rk_double(state);
+	return result;
+}
+*/
 /** Look for a place to insert a value in an inversely sorted float array.
  *
  * @param x an inversely (largest to lowest) sorted float array
@@ -396,27 +426,38 @@ compute_distance2continuum (rpacket_t * packet, storage_model_t * storage)
 
   if (storage->cont_status == CONTINUUM_ON)
     {
+    print_log("storage->cont_status == CONTINUUM_ON\n");
     if (packet->compute_chi_bf)
       {
+	print_log("packet->compute_chi_bf == True\n");
         calculate_chi_bf (packet, storage);
         calculate_chi_ff (packet, storage);
       }
     else
       {
+	print_log("packet->computer_chi_bf == False\n");
         packet->compute_chi_bf=true;
       }
       chi_continuum = rpacket_get_chi_boundfree (packet) + rpacket_get_chi_freefree (packet) + chi_electron;
       d_continuum = rpacket_get_tau_event (packet) / chi_continuum;
+      print_log("Computed d_continuum as tau/chi_continuum\n");
     }
   else
     {
+      print_log("storage->cont_status != CONTINUUM_ON\n");
       chi_continuum = chi_electron;
       d_continuum = storage->inverse_electron_densities[rpacket_get_current_shell_id (packet)] *
         storage->inverse_sigma_thomson * rpacket_get_tau_event (packet);
+      print_log("Computed d_continuum from electron shell densities array\n");
+      printf_log("cur_electron_density: %.16E\n", (1.0/storage->inverse_electron_densities[rpacket_get_current_shell_id(packet)]));
+      printf_log("tau_event: %.16E\n", rpacket_get_tau_event(packet));
+      printf_log("sigma_thomson:%.16E\n", (1.0/storage->inverse_sigma_thomson));
+
     }
 
   if (rpacket_get_virtual_packet(packet) > 0)
     {
+	print_log("SOMETHING IS VERY WRONG!\n");
       //Set all continuum distances to MISS_DISTANCE in case of an virtual_packet
       d_continuum = MISS_DISTANCE;
       packet->compute_chi_bf = false;
@@ -436,6 +477,7 @@ compute_distance2continuum (rpacket_t * packet, storage_model_t * storage)
     }
   rpacket_set_chi_continuum (packet, chi_continuum);
   rpacket_set_d_continuum (packet, d_continuum);
+  print_log("rpacket d_continuum set!\n");
 }
 
 void
@@ -445,7 +487,7 @@ macro_atom (rpacket_t * packet, const storage_model_t * storage, rk_state *mt_st
   uint64_t activate_level = rpacket_get_macro_atom_activation_level (packet);
   while (emit >= 0)
     {
-      double event_random = rk_double (mt_state);
+      double event_random = rk_double_ (mt_state);
       i = storage->macro_block_references[activate_level] - 1;
       double p = 0.0;
       offset = storage->transition_probabilities_nd *
@@ -491,20 +533,32 @@ macro_atom (rpacket_t * packet, const storage_model_t * storage, rk_state *mt_st
 void
 move_packet (rpacket_t * packet, storage_model_t * storage, double distance)
 {
+  print_log("START move_packet:\n");
+  print_log("Packet Just before going in:\n");
+  log_packet((*packet));
   double doppler_factor = rpacket_doppler_factor (packet, storage);
+  printf_log("Computed Doppler Factor: %.16E\n:", doppler_factor);
   if (distance > 0.0)
     {
       double r = rpacket_get_r (packet);
+      printf_log("from rpacket, the initial r was: %.16E\n", r);
+      printf_log("from rpacket, the initial mu was: %.16E\n", rpacket_get_mu(packet));
+      printf_log("out input distance that we computed was: %.16E\n", distance);
       double new_r =
         sqrt (r * r + distance * distance +
               2.0 * r * distance * rpacket_get_mu (packet));
       rpacket_set_mu (packet,
                       (rpacket_get_mu (packet) * r + distance) / new_r);
       rpacket_set_r (packet, new_r);
+      printf_log("  new_r for rpacket: %.16E\n", rpacket_get_r(packet));
+      printf_log("  new_mu for rpacket: %.16E\n", rpacket_get_mu(packet));
       if (rpacket_get_virtual_packet (packet) <= 0)
         {
           double comov_energy = rpacket_get_energy (packet) * doppler_factor;
           double comov_nu = rpacket_get_nu (packet) * doppler_factor;
+	  print_log("Computing comoving values\n");
+	  printf_log(" comov_energy: %.16E\n", comov_energy);
+	  printf_log(" comov_nu: %.16E\n", comov_nu);
           if (storage->full_relativity)
             {
               distance *= doppler_factor;
@@ -526,6 +580,7 @@ move_packet (rpacket_t * packet, storage_model_t * storage, double distance)
             }
         }
     }
+  print_log("END move_packet:\n");
 }
 
 void
@@ -678,7 +733,7 @@ montecarlo_one_packet (storage_model_t * storage, rpacket_t * packet,
                   mu_min = 0.0;
                 }
               double mu_bin = (1.0 - mu_min) / rpacket_get_virtual_packet_flag (packet);
-              rpacket_set_mu(&virt_packet,mu_min + (i + rk_double (mt_state)) * mu_bin);
+              rpacket_set_mu(&virt_packet,mu_min + (i + rk_double_ (mt_state)) * mu_bin);
               switch (virtual_mode)
                 {
                 case -2:
@@ -776,7 +831,7 @@ move_packet_across_shell_boundary (rpacket_t * packet,
     }
   else
     {
-      rpacket_reset_tau_event (packet, mt_state);
+      rpacket_reset_tau_event_ (packet, mt_state);
     }
   if ((rpacket_get_current_shell_id (packet) < storage->no_of_shells - 1
        && rpacket_get_next_shell_id (packet) == 1)
@@ -792,7 +847,7 @@ move_packet_across_shell_boundary (rpacket_t * packet,
       rpacket_set_status (packet, TARDIS_PACKET_STATUS_EMITTED);
     }
   else if ((storage->reflective_inner_boundary == 0) ||
-           (rk_double (mt_state) > storage->inner_boundary_albedo))
+           (rk_double_ (mt_state) > storage->inner_boundary_albedo))
     {
       rpacket_set_status (packet, TARDIS_PACKET_STATUS_REABSORBED);
     }
@@ -802,7 +857,7 @@ move_packet_across_shell_boundary (rpacket_t * packet,
       double comov_nu = rpacket_get_nu (packet) * doppler_factor;
       double comov_energy = rpacket_get_energy (packet) * doppler_factor;
       // TODO: correct
-      rpacket_set_mu (packet, rk_double (mt_state));
+      rpacket_set_mu (packet, rk_double_ (mt_state));
       double inverse_doppler_factor = rpacket_inverse_doppler_factor (packet, storage);
       rpacket_set_nu (packet, comov_nu * inverse_doppler_factor);
       rpacket_set_energy (packet, comov_energy * inverse_doppler_factor);
@@ -817,23 +872,32 @@ void
 montecarlo_thomson_scatter (rpacket_t * packet, storage_model_t * storage,
                             double distance, rk_state *mt_state)
 {
+  print_log("starting montecarlo_thomson_scatter\n");
+  print_log("Before move packet\n");
+  log_packet((*packet));
   move_packet (packet, storage, distance);
+  print_log("After move packet\n");
+  log_packet((*packet));
   double doppler_factor = rpacket_doppler_factor (packet, storage);
   double comov_nu = rpacket_get_nu (packet) * doppler_factor;
   double comov_energy = rpacket_get_energy (packet) * doppler_factor;
-  rpacket_set_mu (packet, 2.0 * rk_double (mt_state) - 1.0);
+  rpacket_set_mu (packet, 2.0 * rk_double_ (mt_state) - 1.0);
+  //rpacket_set_mu (packet, 1.0);
   double inverse_doppler_factor = rpacket_inverse_doppler_factor (packet, storage);
   rpacket_set_nu (packet, comov_nu * inverse_doppler_factor);
   rpacket_set_energy (packet, comov_energy * inverse_doppler_factor);
-  rpacket_reset_tau_event (packet, mt_state);
+  rpacket_reset_tau_event_ (packet, mt_state);
+  //rpacket_set_tau_event (packet, 0.5);
   storage->last_interaction_type[rpacket_get_id (packet)] = 1;
 
+  print_log("After doppler shifting in thomson_scatter\n");
   angle_aberration_CMF_to_LF (packet, storage);
 
   if (rpacket_get_virtual_packet_flag (packet) > 0)
     {
       create_vpacket (storage, packet, mt_state);
     }
+  print_log("ending montecarlo_thomson_scatter\n");
 }
 
 void
@@ -844,7 +908,7 @@ montecarlo_bound_free_scatter (rpacket_t * packet, storage_model_t * storage, do
 
   // Determine in which continuum the bf-absorption occurs
   double chi_bf = rpacket_get_chi_boundfree (packet);
-  double zrand = rk_double (mt_state);
+  double zrand = rk_double_ (mt_state);
   double zrand_x_chibf = zrand * chi_bf;
 
   while ((ccontinuum < storage->no_of_edges - 1) && (packet->chi_bf_tmp_partial[ccontinuum] <= zrand_x_chibf))
@@ -861,7 +925,7 @@ montecarlo_bound_free_scatter (rpacket_t * packet, storage_model_t * storage, do
      in the co-moving frame. */
   move_packet (packet, storage, distance);
   double old_doppler_factor = rpacket_doppler_factor (packet, storage);
-  rpacket_set_mu (packet, 2.0 * rk_double (mt_state) - 1.0);
+  rpacket_set_mu (packet, 2.0 * rk_double_ (mt_state) - 1.0);
   double inverse_doppler_factor = rpacket_inverse_doppler_factor (packet, storage);
   double comov_energy = rpacket_get_energy (packet) * old_doppler_factor;
   rpacket_set_energy (packet, comov_energy * inverse_doppler_factor);
@@ -869,7 +933,7 @@ montecarlo_bound_free_scatter (rpacket_t * packet, storage_model_t * storage, do
   storage->last_line_interaction_in_id[rpacket_get_id (packet)] = ccontinuum;
 
   // Convert the rpacket to thermal or ionization energy
-  zrand = rk_double (mt_state);
+  zrand = rk_double_ (mt_state);
   int64_t activate_level = (zrand < storage->continuum_list_nu[ccontinuum] / comov_nu) ?
     storage->cont_edge2macro_level[ccontinuum] : storage->kpacket2macro_level;
 
@@ -884,7 +948,7 @@ montecarlo_free_free_scatter (rpacket_t * packet, storage_model_t * storage, dou
      in the co-moving frame. */
   move_packet (packet, storage, distance);
   double old_doppler_factor = rpacket_doppler_factor (packet, storage);
-  rpacket_set_mu (packet, 2.0 * rk_double (mt_state) - 1.0);
+  rpacket_set_mu (packet, 2.0 * rk_double_ (mt_state) - 1.0);
   double inverse_doppler_factor = rpacket_inverse_doppler_factor (packet, storage);
   double comov_energy = rpacket_get_energy (packet) * old_doppler_factor;
   rpacket_set_energy (packet, comov_energy * inverse_doppler_factor);
@@ -900,7 +964,7 @@ sample_nu_free_free (const rpacket_t * packet, const storage_model_t * storage, 
 {
 	int64_t shell_id = rpacket_get_current_shell_id (packet);
 	double T = storage->t_electrons[shell_id];
-	double zrand = rk_double (mt_state);
+	double zrand = rk_double_ (mt_state);
 	return -KB * T / H * log(zrand);	// Lucy 2003 MC II Eq.41
 }
 
@@ -911,7 +975,7 @@ sample_nu_free_bound (const rpacket_t * packet, const storage_model_t * storage,
     double th_frequency = storage->continuum_list_nu[continuum_id];
 	int64_t shell_id = rpacket_get_current_shell_id (packet);
 	double T = storage->t_electrons[shell_id];
-	double zrand = rk_double (mt_state);
+	double zrand = rk_double_ (mt_state);
 	return th_frequency * (1 - (KB * T / H / th_frequency * log(zrand)));	// Lucy 2003 MC II Eq.26
 }
 
@@ -948,7 +1012,7 @@ montecarlo_line_scatter (rpacket_t * packet, storage_model_t * storage,
     { // Line absorption occurs
       move_packet (packet, storage, distance);
       double old_doppler_factor = rpacket_doppler_factor (packet, storage);
-      rpacket_set_mu (packet, 2.0 * rk_double (mt_state) - 1.0);
+      rpacket_set_mu (packet, 2.0 * rk_double_ (mt_state) - 1.0);
       double inverse_doppler_factor = rpacket_inverse_doppler_factor (packet, storage);
       double comov_energy = rpacket_get_energy (packet) * old_doppler_factor;
       rpacket_set_energy (packet, comov_energy * inverse_doppler_factor);
@@ -994,7 +1058,7 @@ line_emission (rpacket_t * packet, storage_model_t * storage, int64_t emission_l
 		      storage->line_list_nu[emission_line_id] * inverse_doppler_factor);
   rpacket_set_nu_line (packet, storage->line_list_nu[emission_line_id]);
   rpacket_set_next_line_id (packet, emission_line_id + 1);
-  rpacket_reset_tau_event (packet, mt_state);
+  rpacket_reset_tau_event_ (packet, mt_state);
 
   angle_aberration_CMF_to_LF (packet, storage);
 
@@ -1036,7 +1100,7 @@ continuum_emission (rpacket_t * packet, storage_model_t * storage, rk_state *mt_
   double inverse_doppler_factor = rpacket_inverse_doppler_factor (packet, storage);
   double nu_comov = sample_nu_continuum (packet, storage, mt_state);
   rpacket_set_nu (packet, nu_comov * inverse_doppler_factor);
-  rpacket_reset_tau_event (packet, mt_state);
+  rpacket_reset_tau_event_ (packet, mt_state);
 
   storage->last_interaction_out_type[rpacket_get_id (packet)] = emission_type_id;
 
@@ -1080,24 +1144,33 @@ montecarlo_event_handler_t
 get_event_handler (rpacket_t * packet, storage_model_t * storage,
                    double *distance, rk_state *mt_state)
 {
+
   montecarlo_compute_distances (packet, storage);
+  log_packet((*packet));
   double d_boundary = rpacket_get_d_boundary (packet);
   double d_continuum = rpacket_get_d_continuum (packet);
   double d_line = rpacket_get_d_line (packet);
   montecarlo_event_handler_t handler;
+  print_log("Selecting Handler...\n");
+  printf_log("  distance_boundary: %.16f\n", d_boundary);
+  printf_log("  distance_electron: %.16f\n", d_continuum);
+  printf_log("  distance_trace: %.16f\n", d_line);
   if (d_line <= d_boundary && d_line <= d_continuum)
     {
+      print_log("using monte_carlo_line_scatter as handler\n");
       *distance = d_line;
       handler = &montecarlo_line_scatter;
     }
   else if (d_boundary <= d_continuum)
     {
+      print_log("using move_packet_across_Shell_boundary as handler\n");
       *distance = d_boundary;
       handler = &move_packet_across_shell_boundary;
     }
   else
     {
       *distance = d_continuum;
+      print_log("using montecarlo_continuum_event_handler as handler\n");
       handler = montecarlo_continuum_event_handler (packet, storage, mt_state);
     }
   return handler;
@@ -1108,25 +1181,30 @@ montecarlo_continuum_event_handler (rpacket_t * packet, storage_model_t * storag
 {
   if (storage->cont_status)
     {
-      double zrand_x_chi_cont = rk_double (mt_state) * rpacket_get_chi_continuum (packet);
+      double zrand_x_chi_cont = rk_double_ (mt_state) * rpacket_get_chi_continuum (packet);
       double chi_th = rpacket_get_chi_electron (packet);
       double chi_bf = rpacket_get_chi_boundfree (packet);
 
       if (zrand_x_chi_cont < chi_th)
         {
+
+          print_log("using montecarlo_thomson_scatter\n");
           return &montecarlo_thomson_scatter;
         }
       else if (zrand_x_chi_cont < chi_th + chi_bf)
         {
+          print_log("using montecarlo_bound_free_scatter\n");
           return &montecarlo_bound_free_scatter;
         }
       else
         {
+          print_log("using montecarlo_free_free_scatter\n");
           return &montecarlo_free_free_scatter;
         }
     }
   else
     {
+      print_log("using montecarlo_thomson_scatter\n");
       return &montecarlo_thomson_scatter;
     }
 }
@@ -1135,32 +1213,48 @@ int64_t
 montecarlo_one_packet_loop (storage_model_t * storage, rpacket_t * packet,
                             int64_t virtual_packet, rk_state *mt_state)
 {
+  print_log("Start monte_carlo_one_packet_loop\n");
+  print_log("Input Packet:\n");
+  log_packet((*packet));
   rpacket_set_tau_event (packet, 0.0);
   rpacket_set_nu_line (packet, 0.0);
   rpacket_set_virtual_packet (packet, virtual_packet);
   rpacket_set_status (packet, TARDIS_PACKET_STATUS_IN_PROCESS);
+  print_log("Ran the Following:\n");
+  print_log(" rpacket_set_tau_event\n");
+  print_log(" rpacket_set_virtual_packet\n");
+  print_log(" rpacket_set_status\n");
+  log_packet((*packet));
   // Initializing tau_event if it's a real packet.
   if (virtual_packet == 0)
     {
-      rpacket_reset_tau_event (packet,mt_state);
+      rpacket_reset_tau_event_ (packet,mt_state);
+      //rpacket_set_tau_event (packet,0.5);
+      print_log("Ran rpacket_reset_tau_event_\n");
+      log_packet((*packet));
     }
   // For a virtual packet tau_event is the sum of all the tau's that the packet passes.
+  print_log("Starting montecarlo loop\n");
   while (rpacket_get_status (packet) == TARDIS_PACKET_STATUS_IN_PROCESS)
     {
       // Check if we are at the end of line list.
       if (!rpacket_get_last_line (packet))
         {
+	  print_log("We are at the end of the line list.  Calling rpacket_set_nu_line\n");
           rpacket_set_nu_line (packet,
                                storage->
                                line_list_nu[rpacket_get_next_line_id
                                (packet)]);
+	  log_packet((*packet));
         }
       double distance;
+      print_log("Getting and Running Event Handler\n");
       get_event_handler (packet, storage, &distance, mt_state) (packet, storage,
                                                                 distance, mt_state);
+      log_packet((*packet));
       if (virtual_packet > 0 && rpacket_get_tau_event (packet) > storage->tau_russian)
         {
-            double event_random = rk_double (mt_state);
+            double event_random = rk_double_ (mt_state);
             if (event_random > storage->survival_probability)
               {
                 rpacket_set_energy(packet, 0.0);
@@ -1182,6 +1276,8 @@ montecarlo_one_packet_loop (storage_model_t * storage, rpacket_t * packet,
                                                              rpacket_get_tau_event
                                                              (packet)));
     }
+  print_log("While Loop Ended\n");
+  log_packet((*packet));
   return rpacket_get_status (packet) ==
     TARDIS_PACKET_STATUS_REABSORBED ? 1 : 0;
 }
@@ -1237,6 +1333,7 @@ montecarlo_main_loop(storage_model_t * storage, int64_t virtual_packet_flag, int
             }
           reabsorbed = montecarlo_one_packet(storage, &packet, 0, &mt_state);
           storage->output_nus[packet_index] = rpacket_get_nu(&packet);
+	  
           if (reabsorbed == 1)
             {
               storage->output_energies[packet_index] = -rpacket_get_energy(&packet);
@@ -1277,7 +1374,7 @@ create_vpacket (storage_model_t * storage, rpacket_t * packet,
           (storage->r_outer[shell_id] - rpacket_get_r (packet)) /
           (storage->r_outer[shell_id] - storage->r_inner[shell_id]));
       double vpacket_prob = exp(-tau_bias);
-      double event_random = rk_double (mt_state);
+      double event_random = rk_double_ (mt_state);
       if (event_random < vpacket_prob)
         {
            packet->vpacket_weight = 1. / vpacket_prob;
