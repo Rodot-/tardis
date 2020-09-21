@@ -59,7 +59,7 @@ static int indent_level = 0;
 				fprintf(flog,"->tau_event:%f\n", packet.tau_event); \
 				fclose(flog);}
 
-#define rk_double_(X) (printf_log("Calling RNG at line %d\n", __LINE__),\
+#define rk_double_(X) (printf("Calling RNG at line %d\n", __LINE__),\
 		rk_double((X)) )
 
 #define rpacket_reset_tau_event_(X, Y) (printf("Calling RNG (reset_tau_event) at line %d\n", __LINE__),\
