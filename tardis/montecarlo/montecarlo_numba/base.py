@@ -79,6 +79,8 @@ def montecarlo_main_loop(packet_collection, numba_model, numba_plasma,
 
         print("In base.py")
         print(r_packet.energy, r_packet.nu, r_packet.mu)
+
+
         vpacket_collection = VPacketCollection(
             spectrum_frequency,
             montecarlo_configuration.v_packet_spawn_start_frequency,
@@ -87,6 +89,10 @@ def montecarlo_main_loop(packet_collection, numba_model, numba_plasma,
             montecarlo_configuration.temporary_v_packet_bins)
         loop = single_packet_loop(r_packet, numba_model, numba_plasma, estimators,
                            vpacket_collection, sigma_thomson)
+
+        print("Random number in base.py (to match C)")
+        ran = np.random.random()
+        print(-np.log(ran))
         # if loop and 'stop' in loop:
         #     raise MonteCarloException
 

@@ -317,9 +317,12 @@ def trace_packet(r_packet, numba_model, numba_plasma, estimators, sigma_thomson)
         # calculating the trace
         tau_trace_combined = tau_trace_line_combined + tau_trace_electron
 
+        print("mu")
         print(r_packet.mu)
+        print("distance e, distance b, distance trace")
         print(distance_electron, distance_boundary, distance_trace)
-        print(tau_event, tau_trace_combined)
+        print("tau event, tau trace combined, tau trace line combined, tau trace line")
+        print(tau_event, tau_trace_combined, tau_trace_line_combined, tau_trace_line)
 
         if ((distance_boundary <= distance_trace) and
                 (distance_boundary <= distance_electron)):
@@ -493,8 +496,9 @@ def move_packet_across_shell_boundary(packet, delta_shell,
 
     #Difference with C code- extra call to generate tau for some reason
     #cmontecarlo.c:834
-    print("Random number in move_packet_across_shell_boundary (from C)")
-    np.random.random()
+    #print("Random number in move_packet_across_shell_boundary (from C)")
+    #ran = np.random.random()
+    #print(-np.log(ran))
 
     if next_shell_id >= no_of_shells:
         packet.status = PacketStatus.EMITTED
