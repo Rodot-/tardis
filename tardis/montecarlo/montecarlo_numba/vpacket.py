@@ -173,6 +173,7 @@ def trace_vpacket_volley(r_packet, vpacket_collection, numba_model,
     r_packet_doppler_factor = get_doppler_factor(r_packet.r, r_packet.mu, 
                                                  numba_model.time_explosion)
     for i in range(no_of_vpackets):
+        print("Random number for a Vpacket!")
         v_packet_mu = mu_min + i * mu_bin + np.random.random() * mu_bin
 
         if v_packet_on_inner_boundary: # The weights are described in K&S 2014

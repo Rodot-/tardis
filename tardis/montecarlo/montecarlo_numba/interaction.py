@@ -31,6 +31,7 @@ def thomson_scatter(r_packet, time_explosion):
         time_explosion)
     comov_nu = r_packet.nu * old_doppler_factor
     comov_energy = r_packet.energy * old_doppler_factor
+    print("Random mu called from Thomson scatter")
     r_packet.mu = get_random_mu()
     inverse_new_doppler_factor = get_inverse_doppler_factor(
         r_packet.r, r_packet.mu, time_explosion)
@@ -83,6 +84,7 @@ def line_scatter(r_packet, time_explosion, line_interaction_type, numba_plasma):
     old_doppler_factor = get_doppler_factor(r_packet.r,
                                         r_packet.mu,
                                         time_explosion)
+    print("Random mu called from line scatter")
     r_packet.mu = get_random_mu()
 
     inverse_new_doppler_factor = get_inverse_doppler_factor(

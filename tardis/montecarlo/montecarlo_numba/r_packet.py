@@ -173,8 +173,8 @@ def get_inverse_doppler_factor_full_relativity(mu, beta):
 
 @njit(**njit_dict)
 def get_random_mu():
-    #return 2.0 * np.random.random() - 1.0
-    return 0.0
+    #print("Random number from get_random_mu")
+    return 2.0 * np.random.random() - 1.0
 
 @jitclass(rpacket_spec)
 class RPacket(object):
@@ -270,7 +270,8 @@ def trace_packet(r_packet, numba_model, numba_plasma, estimators, sigma_thomson)
 
     # defining taus
     #tau_event = np.random.exponential()
-    tau_event = 0.5
+    print("Random tau_event from trace_packet")
+    tau_event = -np.log(np.random.random())
     tau_trace_line_combined = 0.0
 
     # e scattering initialization
@@ -315,6 +316,10 @@ def trace_packet(r_packet, numba_model, numba_plasma, estimators, sigma_thomson)
 
         # calculating the trace
         tau_trace_combined = tau_trace_line_combined + tau_trace_electron
+
+        print(r_packet.mu)
+        print(distance_electron, distance_boundary, distance_trace)
+        print(tau_event, tau_trace_combined)
 
         if ((distance_boundary <= distance_trace) and
                 (distance_boundary <= distance_electron)):
@@ -391,30 +396,33 @@ def move_r_packet(r_packet, distance, time_explosion, numba_estimator):
                                         r_packet.mu,
                                         time_explosion)
 
+    comov_nu = r_packet.nu * doppler_factor
+    comov_energy = r_packet.energy * doppler_factor
+
+    if montecarlo_configuration.full_relativity:
+        distance = distance * doppler_factor
+        set_estimators_full_relativity(r_packet,
+                                       distance,
+                                       numba_estimator,
+                                       comov_nu,
+                                       comov_energy,
+                                       doppler_factor)
+    else:
+        set_estimators(r_packet,
+                       distance,
+                       numba_estimator,
+                       comov_nu,
+                       comov_energy)
+
     r = r_packet.r
     if (distance > 0.0):
+        print("In move_r_packet, distance, r, mu: ", distance, r, r_packet.mu)
         new_r = np.sqrt(r**2 + distance**2 +
                          2.0 * r * distance * r_packet.mu)
         r_packet.mu = (r_packet.mu * r + distance) / new_r
         r_packet.r = new_r
+        print("In move_r_packet: ", r_packet.r)
 
-        comov_nu = r_packet.nu * doppler_factor
-        comov_energy = r_packet.energy * doppler_factor
-
-        if montecarlo_configuration.full_relativity:
-            distance = distance * doppler_factor
-            set_estimators_full_relativity(r_packet,
-                                           distance,
-                                           numba_estimator,
-                                           comov_nu,
-                                           comov_energy,
-                                           doppler_factor)
-        else:
-            set_estimators(r_packet,
-                           distance,
-                           numba_estimator,
-                           comov_nu,
-                           comov_energy)
 
 @njit(**njit_dict)
 def set_estimators(r_packet, distance, numba_estimator, comov_nu, comov_energy):
@@ -482,6 +490,11 @@ def move_packet_across_shell_boundary(packet, delta_shell,
         number of shells in TARDIS simulation
     """
     next_shell_id = packet.current_shell_id + delta_shell
+
+    #Difference with C code- extra call to generate tau for some reason
+    #cmontecarlo.c:834
+    print("Random number in move_packet_across_shell_boundary (from C)")
+    np.random.random()
 
     if next_shell_id >= no_of_shells:
         packet.status = PacketStatus.EMITTED

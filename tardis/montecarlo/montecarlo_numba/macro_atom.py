@@ -34,6 +34,7 @@ def macro_atom(r_packet, numba_plasma):
     current_transition_type = 0
 
     while current_transition_type >= 0:
+        print("Random number from macro atom")
         probability = 0.0
         probability_event = np.random.random()
 

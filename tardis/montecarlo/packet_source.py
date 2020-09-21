@@ -26,7 +26,7 @@ class BasePacketSource(abc.ABC):
         no_of_packets : int
             number of packets to be created
         """
-
+        print("Random number from create_mus")
         return np.sqrt(np.random.random(no_of_packets))
 
     @staticmethod
@@ -83,12 +83,13 @@ class BasePacketSource(abc.ABC):
         l_array = np.cumsum(np.arange(1, l_samples, dtype=np.float64) ** -4)
         l_coef = np.pi ** 4 / 90.0
 
+        print("Random number from create nus")
         xis = np.random.random((5, no_of_packets))
         l = l_array.searchsorted(xis[0] * l_coef) + 1.
         xis_prod = np.prod(xis[1:], 0)
         x = ne.evaluate('-log(xis_prod)/l')
 
-        return x * (const.k_B.cgs.value * T) / const.h.cgs.value
+        return (x * (const.k_B.cgs.value * T) / const.h.cgs.value)
 
 
 class BlackBodySimpleSource(BasePacketSource):
