@@ -12,22 +12,49 @@
 #include "rpacket.h"
 #include "cmontecarlo.h"
 
+
+static char indent[256] = "";
+static int indent_level = 0;
 #define printf_log(F, X) {FILE* flog = fopen("packet_logger.info", "a");\
+	                fprintf(flog, "%s", indent);\
 	                fprintf(flog, F, X);\
 	                fclose(flog);}  
 #define print_log(F) {FILE* flog = fopen("packet_logger.info", "a");\
-	                fprintf(flog, F);\
+					if (strncmp(F, "Entering", 8) == 0) {\
+	                     fprintf(flog, "%s%s", indent, F);\
+                         fprintf(flog, "%sv---------------v\n", indent);\
+                         indent[indent_level] = ' ';\
+                         indent_level += 1;\
+                    }\
+                    else if (strncmp(F, "Exiting", 7) == 0) {\
+                         indent_level -= 1;\
+                         indent[indent_level] = '\0';\
+                         fprintf(flog, "%s^---------------^\n", indent);\
+	                     fprintf(flog, "%s%s", indent, F);\
+					}\
+					else {\
+	                	 fprintf(flog, "%s%s", indent, F);\
+					}\
 	                fclose(flog);}  
 #define log_packet(packet) {FILE* flog = fopen("packet_logger.info", "a");\
+	            fprintf(flog, "%s", indent);\
 				fprintf(flog,"Logging Packet:\n"); \
-				fprintf(flog,"  r:%.16f\n", packet.r); \
-			    	fprintf(flog,"  mu:%.16f\n", packet.mu); \
-				fprintf(flog,"  nu:%.16f\n", packet.nu); \
-				fprintf(flog,"  energy:%.16f\n", packet.energy); \
-				fprintf(flog,"  current_shell_id:%d\n", packet.current_shell_id); \
-				fprintf(flog,"  status:%d\n", (int)packet.status); \
-				fprintf(flog,"  index:%d\n", packet.id); \
-				fprintf(flog,"  d_continuum:%f\n", packet.d_cont); \
+	            fprintf(flog, "%s", indent);\
+				fprintf(flog,"->r:%.16f\n", packet.r); \
+	            fprintf(flog, "%s", indent);\
+			    fprintf(flog,"->mu:%.16f\n", packet.mu); \
+	            fprintf(flog, "%s", indent);\
+				fprintf(flog,"->nu:%.16f\n", packet.nu); \
+	            fprintf(flog, "%s", indent);\
+				fprintf(flog,"->energy:%.16f\n", packet.energy); \
+	            fprintf(flog, "%s", indent);\
+				fprintf(flog,"->current_shell_id:%d\n", packet.current_shell_id); \
+	            fprintf(flog, "%s", indent);\
+				fprintf(flog,"->status:%d\n", (int)packet.status); \
+	            fprintf(flog, "%s", indent);\
+				fprintf(flog,"->index:%d\n", packet.id); \
+	            fprintf(flog, "%s", indent);\
+				fprintf(flog,"->d_continuum:%f\n", packet.d_cont); \
 				fclose(flog);}
 
 #define rk_double_(X) (printf("Calling RNG at line %d\n", __LINE__),\
@@ -569,7 +596,7 @@ move_packet (rpacket_t * packet, storage_model_t * storage, double distance)
   print_log("Packet Just before going in:\n");
   log_packet((*packet));
   double doppler_factor = rpacket_doppler_factor (packet, storage);
-  printf_log("Computed Doppler Factor: %.16E\n:", doppler_factor);
+  printf_log("Computed Doppler Factor: %.16E\n", doppler_factor);
   if (distance > 0.0)
     {
       double r = rpacket_get_r (packet);
@@ -582,15 +609,15 @@ move_packet (rpacket_t * packet, storage_model_t * storage, double distance)
       rpacket_set_mu (packet,
                       (rpacket_get_mu (packet) * r + distance) / new_r);
       rpacket_set_r (packet, new_r);
-      printf_log("  new_r for rpacket: %.16E\n", rpacket_get_r(packet));
-      printf_log("  new_mu for rpacket: %.16E\n", rpacket_get_mu(packet));
+      printf_log("->new_r for rpacket: %.16E\n", rpacket_get_r(packet));
+      printf_log("->new_mu for rpacket: %.16E\n", rpacket_get_mu(packet));
       if (rpacket_get_virtual_packet (packet) <= 0)
         {
           double comov_energy = rpacket_get_energy (packet) * doppler_factor;
           double comov_nu = rpacket_get_nu (packet) * doppler_factor;
 	  print_log("Computing comoving values\n");
-	  printf_log(" comov_energy: %.16E\n", comov_energy);
-	  printf_log(" comov_nu: %.16E\n", comov_nu);
+	  printf_log("->comov_energy: %.16E\n", comov_energy);
+	  printf_log("->comov_nu: %.16E\n", comov_nu);
           if (storage->full_relativity)
             {
               distance *= doppler_factor;
@@ -1216,9 +1243,9 @@ get_event_handler (rpacket_t * packet, storage_model_t * storage,
   double d_line = rpacket_get_d_line (packet);
   montecarlo_event_handler_t handler;
   print_log("Selecting Handler...\n");
-  printf_log("  distance_boundary: %.16f\n", d_boundary);
-  printf_log("  distance_electron: %.16f\n", d_continuum);
-  printf_log("  distance_trace: %.16f\n", d_line);
+  printf_log("->distance_boundary: %.16f\n", d_boundary);
+  printf_log("->distance_electron: %.16f\n", d_continuum);
+  printf_log("->distance_trace: %.16f\n", d_line);
   if (d_line <= d_boundary && d_line <= d_continuum)
     {
       print_log("using monte_carlo_line_scatter as handler\n");
@@ -1291,9 +1318,9 @@ montecarlo_one_packet_loop (storage_model_t * storage, rpacket_t * packet,
   rpacket_set_virtual_packet (packet, virtual_packet);
   rpacket_set_status (packet, TARDIS_PACKET_STATUS_IN_PROCESS);
   print_log("Ran the Following:\n");
-  print_log(" rpacket_set_tau_event\n");
-  print_log(" rpacket_set_virtual_packet\n");
-  print_log(" rpacket_set_status\n");
+  print_log("->rpacket_set_tau_event\n");
+  print_log("->rpacket_set_virtual_packet\n");
+  print_log("->rpacket_set_status\n");
   log_packet((*packet));
   // Initializing tau_event if it's a real packet.
   if (virtual_packet == 0)
