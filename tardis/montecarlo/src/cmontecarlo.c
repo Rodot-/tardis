@@ -55,6 +55,8 @@ static int indent_level = 0;
 				fprintf(flog,"->index:%d\n", packet.id); \
 	            fprintf(flog, "%s", indent);\
 				fprintf(flog,"->d_continuum:%f\n", packet.d_cont); \
+	            fprintf(flog, "%s", indent);\
+				fprintf(flog,"->tau_event:%f\n", packet.tau_event); \
 				fclose(flog);}
 
 #define rk_double_(X) (printf("Calling RNG at line %d\n", __LINE__),\
