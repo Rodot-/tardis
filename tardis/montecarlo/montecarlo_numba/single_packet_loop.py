@@ -64,7 +64,10 @@ def single_packet_loop(r_packet, numba_model, numba_plasma, estimators,
     else:
         set_packet_props_partial_relativity(r_packet, numba_model)
     print("In single_packet_loop")
-    print(r_packet.energy, r_packet.nu, r_packet.mu)
+    print("energy:", r_packet.energy)
+    print("nu:", r_packet.nu)
+    print("mu:", r_packet.mu)
+    print("index", r_packet.index)
     r_packet.initialize_line_id(numba_plasma, numba_model)
 
     trace_vpacket_volley(r_packet, vpacket_collection, numba_model,
@@ -82,17 +85,33 @@ def single_packet_loop(r_packet, numba_model, numba_plasma, estimators,
         distance, interaction_type, delta_shell = trace_packet(
             r_packet, numba_model, numba_plasma, estimators, sigma_thomson)
 
-        print("IN PROCESS result: ", r_packet.energy, r_packet.nu, r_packet.r, r_packet.mu)
+        print("IN PROCESS result: ")
+        print("energy:", r_packet.energy)
+        print("nu:", r_packet.nu)
+        print("mu:", r_packet.mu)
+        print("r:", r_packet.r)
+        print("index", r_packet.index)
 
         if interaction_type == InteractionType.BOUNDARY:
             print("BOUNDARY")
             move_r_packet(r_packet, distance, numba_model.time_explosion,
                           estimators)
-            print("BOUNDARY result: ", r_packet.energy, r_packet.nu,  r_packet.r, r_packet.mu)
+            print("BOUNDARY result: ")
+            print("energy:", r_packet.energy)
+            print("nu:", r_packet.nu)
+            print("mu:", r_packet.mu)
+            print("r:", r_packet.r)
+            print("index", r_packet.index)
+
             print("CROSS BOUNDARY")
             move_packet_across_shell_boundary(r_packet, delta_shell,
                                                        len(numba_model.r_inner))
-            print("CROSS BOUNDARY result: ", r_packet.energy, r_packet.nu, r_packet.r, r_packet.mu)
+            print("CROSS BOUNDARY result: ")
+            print("energy:", r_packet.energy)
+            print("nu:", r_packet.nu)
+            print("mu:", r_packet.mu)
+            print("r:", r_packet.r)
+            print("index", r_packet.index)
 
         elif interaction_type == InteractionType.LINE:
             print("LINE")
@@ -100,7 +119,12 @@ def single_packet_loop(r_packet, numba_model, numba_plasma, estimators,
 
             move_r_packet(r_packet, distance, numba_model.time_explosion,
                           estimators)
-            print("LINE move result: ", r_packet.energy, r_packet.nu, r_packet.r, r_packet.mu)
+            print("LINE move result: ")
+            print("energy:", r_packet.energy)
+            print("nu:", r_packet.nu)
+            print("mu:", r_packet.mu)
+            print("r:", r_packet.r)
+            print("index", r_packet.index)
 
             print("LINE scatter")
             line_scatter(r_packet, numba_model.time_explosion,
@@ -109,8 +133,12 @@ def single_packet_loop(r_packet, numba_model, numba_plasma, estimators,
                 r_packet, vpacket_collection, numba_model, numba_plasma,
                 sigma_thomson)
 
-            print("LINE scatter result: ", r_packet.energy, r_packet.nu, r_packet.r, r_packet.mu)
-
+            print("LINE scatter result: ")
+            print("energy:", r_packet.energy)
+            print("nu:", r_packet.nu)
+            print("mu:", r_packet.mu)
+            print("r:", r_packet.r)
+            print("index", r_packet.index)
 
         elif interaction_type == InteractionType.ESCATTERING:
             print("ESCATTER")
@@ -119,11 +147,20 @@ def single_packet_loop(r_packet, numba_model, numba_plasma, estimators,
                           estimators)
 
             print("MOVE result:")
-            print(r_packet.energy, r_packet.nu, r_packet.r, r_packet.mu)
+            print("energy:", r_packet.energy)
+            print("nu:", r_packet.nu)
+            print("mu:", r_packet.mu)
+            print("r:", r_packet.r)
+            print("index", r_packet.index)
+
             thomson_scatter(r_packet, numba_model.time_explosion)
 
             print("E SCATTERED result:")
-            print(r_packet.energy, r_packet.nu, r_packet.r, r_packet.mu)
+            print("energy:", r_packet.energy)
+            print("nu:", r_packet.nu)
+            print("mu:", r_packet.mu)
+            print("r:", r_packet.r)
+            print("index", r_packet.index)
 
             trace_vpacket_volley(r_packet, vpacket_collection, numba_model,
                                  numba_plasma, sigma_thomson)

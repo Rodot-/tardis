@@ -262,6 +262,9 @@ def trace_packet(r_packet, numba_model, numba_plasma, estimators, sigma_thomson)
     r_inner = numba_model.r_inner[r_packet.current_shell_id]
     r_outer = numba_model.r_outer[r_packet.current_shell_id]
 
+    print("current_shell_id:", r_packet.current_shell_id)
+    print("index", r_packet.index)
+
     distance_boundary, delta_shell = calculate_distance_boundary(
         r_packet.r, r_packet.mu, r_inner, r_outer)
 
@@ -295,6 +298,11 @@ def trace_packet(r_packet, numba_model, numba_plasma, estimators, sigma_thomson)
         nu_line = numba_plasma.line_list_nu[cur_line_id]
         nu_line_last_interaction = numba_plasma.line_list_nu[cur_line_id - 1]
 
+        print("nu:", r_packet.nu)
+        print("nu_line:", nu_line)
+        print("nu_line_last_interaction:", nu_line_last_interaction)
+        print("cur_line_id:", cur_line_id)
+
         # Getting the tau for the next line
         tau_trace_line = numba_plasma.tau_sobolev[
             cur_line_id, r_packet.current_shell_id]
@@ -317,12 +325,14 @@ def trace_packet(r_packet, numba_model, numba_plasma, estimators, sigma_thomson)
         # calculating the trace
         tau_trace_combined = tau_trace_line_combined + tau_trace_electron
 
-        print("mu")
-        print(r_packet.mu)
-        print("distance e, distance b, distance trace")
-        print(distance_electron, distance_boundary, distance_trace)
-        print("tau event, tau trace combined, tau trace line combined, tau trace line")
-        print(tau_event, tau_trace_combined, tau_trace_line_combined, tau_trace_line)
+        print("mu: ", r_packet.mu)
+        print("distance_electron:", distance_electron)
+        print("distance_boundary:", distance_boundary)
+        print("distance_trace:", distance_trace)
+        print("tau_event:", tau_event)
+        print("tau_trace_combined:", tau_trace_combined)
+        print("tau_trace_line_combined:", tau_trace_line_combined)
+        print("tau_trace_line:", tau_trace_line)
 
         if ((distance_boundary <= distance_trace) and
                 (distance_boundary <= distance_electron)):
@@ -355,6 +365,8 @@ def trace_packet(r_packet, numba_model, numba_plasma, estimators, sigma_thomson)
             break
         # Recalculating distance_electron using tau_event -
         # tau_trace_line_combined
+        print("tau event - tau trace line combined")
+        print(tau_event - tau_trace_line_combined)
         distance_electron = calculate_distance_electron(
             cur_electron_density, tau_event - tau_trace_line_combined,
         sigma_thomson)
@@ -419,12 +431,15 @@ def move_r_packet(r_packet, distance, time_explosion, numba_estimator):
 
     r = r_packet.r
     if (distance > 0.0):
-        print("In move_r_packet, distance, r, mu: ", distance, r, r_packet.mu)
+        print("In move_r_packet")
+        print("distance:", distance)
+        print("r:", r)
+        print("mu:", r_packet.mu)
         new_r = np.sqrt(r**2 + distance**2 +
                          2.0 * r * distance * r_packet.mu)
         r_packet.mu = (r_packet.mu * r + distance) / new_r
         r_packet.r = new_r
-        print("In move_r_packet: ", r_packet.r)
+        print("In move_r_packet\n r: ", r_packet.r)
 
 
 @njit(**njit_dict)

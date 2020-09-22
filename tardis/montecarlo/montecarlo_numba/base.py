@@ -78,7 +78,11 @@ def montecarlo_main_loop(packet_collection, numba_model, numba_plasma,
                            i)
 
         print("In base.py")
-        print(r_packet.energy, r_packet.nu, r_packet.mu)
+        print("energy:", r_packet.energy)
+        print("nu:", r_packet.nu)
+        print("mu:", r_packet.mu)
+        print("r:", r_packet.r)
+        print("index", r_packet.index)
 
 
         vpacket_collection = VPacketCollection(
