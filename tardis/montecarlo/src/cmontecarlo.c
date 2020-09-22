@@ -12,9 +12,11 @@
 #include "rpacket.h"
 #include "cmontecarlo.h"
 
-
+#define DEBUG
 static char indent[256] = "";
 static int indent_level = 0;
+#ifdef DEBUG
+
 #define printf_log(F, X) {FILE* flog = fopen("packet_logger.info", "a");\
 	                fprintf(flog, "%s", indent);\
 	                fprintf(flog, F, X);\
@@ -59,11 +61,25 @@ static int indent_level = 0;
 				fprintf(flog,"->tau_event:%f\n", packet.tau_event); \
 				fclose(flog);}
 
-#define rk_double_(X) (printf("Calling RNG at line %d\n", __LINE__),\
+
+void linelog(char* fmt, int line) {
+	printf_log(fmt, line);
+}
+#define rk_double_(X) (linelog("Calling RNG at line %d\n", __LINE__),\
 		rk_double((X)) )
 
-#define rpacket_reset_tau_event_(X, Y) (printf("Calling RNG (reset_tau_event) at line %d\n", __LINE__),\
+
+
+#define rpacket_reset_tau_event_(X, Y) (linelog("Calling RNG (reset_tau_event) at line %d\n", __LINE__),\
 		rpacket_reset_tau_event(X, Y) )
+
+#else
+#define printf_log(F, X)
+#define print_log(F)
+#define log_packet(packet)
+#define rk_double_ rk_double
+#define rpacket_reset_tau_event_ rpacket_reset_tau_event 
+#endif
 
 /*
 inline double rk_double_(rk_state* state) {
@@ -1080,6 +1096,10 @@ montecarlo_line_scatter (rpacket_t * packet, storage_model_t * storage,
   double tau_combined = tau_line + tau_continuum;
   //rpacket_set_next_line_id (packet, rpacket_get_next_line_id (packet) + 1);
 
+  printf_log("->line2d_idx=next_line_id+no_of_lines*current_shell_id:%d\n", line2d_idx);
+  printf_log("|->next_line_id: %d\n", next_line_id);
+  printf_log("|->no_of_lines: %d\n", storage->no_of_lines);
+  printf_log("|->current_shell_id: %d\n", rpacket_get_current_shell_id(packet));
   printf_log("->tau_line:%.16f\n", tau_line);
   printf_log("->tau_continuum:%.16f\n", tau_continuum);
   printf_log("->tau_combined:%.16f\n", tau_combined);
@@ -1215,6 +1235,7 @@ continuum_emission (rpacket_t * packet, storage_model_t * storage, rk_state *mt_
   print_log("Exiting continuum_emission\n");
 }
 
+
 static void
 montecarlo_compute_distances (rpacket_t * packet, storage_model_t * storage)
 {
@@ -1344,7 +1365,7 @@ montecarlo_one_packet_loop (storage_model_t * storage, rpacket_t * packet,
       // Check if we are at the end of line list.
       if (!rpacket_get_last_line (packet))
         {
-	  print_log("We are at the end of the line list.  Calling rpacket_set_nu_line\n");
+	  print_log("We are no at the end of the line list.  Calling rpacket_set_nu_line\n");
           rpacket_set_nu_line (packet,
                                storage->
                                line_list_nu[rpacket_get_next_line_id
@@ -1433,6 +1454,8 @@ montecarlo_main_loop(storage_model_t * storage, int64_t virtual_packet_flag, int
           rpacket_t packet;
           rpacket_set_id(&packet, packet_index);
           rpacket_init(&packet, storage, packet_index, virtual_packet_flag, chi_bf_tmp_partial);
+		  print_log("Initialized rpacket");
+		  log_packet(packet);
           if (virtual_packet_flag > 0)
             {
               reabsorbed = montecarlo_one_packet(storage, &packet, -1, &mt_state);
