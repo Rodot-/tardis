@@ -423,6 +423,10 @@ compute_distance2line (rpacket_t * packet, const storage_model_t * storage)
       double ct = storage->time_explosion * C;
       double doppler_factor = rpacket_doppler_factor (packet, storage);
       double comov_nu = nu * doppler_factor;
+      print_log("->nu: %.16f\n", nu);
+      print_log("->nu_line: %.16f\n", nu_line);
+      print_log("->comov_nu: %.16f\n", comov_nu);
+      print_log("->doppler_factor: %.16f\n", doppler_factor);
       if ( (nu_diff = comov_nu - nu_line) >= 0)
         {
           if (!storage->full_relativity)
