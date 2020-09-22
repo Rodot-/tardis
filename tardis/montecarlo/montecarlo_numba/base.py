@@ -75,7 +75,7 @@ def montecarlo_main_loop(packet_collection, numba_model, numba_plasma,
                            packet_collection.packets_input_nu[i],
                            packet_collection.packets_input_energy[i],
                            seed,
-                           i)
+                           i, 0)
 
         print("In base.py")
         print("energy:", r_packet.energy)

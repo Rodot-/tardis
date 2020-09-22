@@ -91,6 +91,7 @@ def single_packet_loop(r_packet, numba_model, numba_plasma, estimators,
         print("mu:", r_packet.mu)
         print("r:", r_packet.r)
         print("index", r_packet.index)
+        print("close_line", r_packet.close_line)
 
         if interaction_type == InteractionType.BOUNDARY:
             print("BOUNDARY")
@@ -125,6 +126,7 @@ def single_packet_loop(r_packet, numba_model, numba_plasma, estimators,
             print("mu:", r_packet.mu)
             print("r:", r_packet.r)
             print("index", r_packet.index)
+            print("close_line", r_packet.close_line)
 
             print("LINE scatter")
             line_scatter(r_packet, numba_model.time_explosion,

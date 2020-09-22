@@ -40,8 +40,32 @@ rpacket_spec = [
     ('current_shell_id', int64),
     ('status', int64),
     ('seed', int64),
-    ('index', int64)
+    ('index', int64),
+    ('close_line', int64)
 ]
+
+@jitclass(rpacket_spec)
+class RPacket(object):
+    def __init__(self, r, mu, nu, energy, seed, index=0, close_line=0):
+        self.r = r
+        self.mu = mu
+        self.nu = nu
+        self.energy = energy
+        self.current_shell_id = 0
+        self.status = PacketStatus.IN_PROCESS
+        self.seed = seed
+        self.index = index
+        self.close_line = close_line
+
+    def initialize_line_id(self, numba_plasma, numba_model):
+        inverse_line_list_nu = numba_plasma.line_list_nu[::-1]
+        doppler_factor = get_doppler_factor(self.r, self.mu,
+                                            numba_model.time_explosion)
+        comov_nu = self.nu * doppler_factor
+        next_line_id = (len(numba_plasma.line_list_nu) -
+                        np.searchsorted(inverse_line_list_nu, comov_nu))
+        self.next_line_id = next_line_id
+
 
 @njit(**njit_dict)
 def calculate_distance_boundary(r, mu, r_inner, r_outer):
@@ -95,8 +119,12 @@ def calculate_distance_line(
     nu_diff_last = nu_last_interaction - nu_line
 
     # for numerical reasons, if line is too close, we set the distance to 0.
-    if np.abs(nu_diff_last / nu_last_interaction) < CLOSE_LINE_THRESHOLD:
+    #if np.abs(nu_diff_last / nu_last_interaction) < CLOSE_LINE_THRESHOLD:
+    #    nu_diff = 0.0
+    close_line = r_packet.close_line
+    if close_line > 0:
         nu_diff = 0.0
+        r_packet.close_line = 0
 
     if nu_diff >= 0:
         distance = (nu_diff / nu) * C_SPEED_OF_LIGHT * time_explosion
@@ -175,27 +203,6 @@ def get_inverse_doppler_factor_full_relativity(mu, beta):
 def get_random_mu():
     #print("Random number from get_random_mu")
     return 2.0 * np.random.random() - 1.0
-
-@jitclass(rpacket_spec)
-class RPacket(object):
-    def __init__(self, r, mu, nu, energy, seed, index=0):
-        self.r = r
-        self.mu = mu
-        self.nu = nu
-        self.energy = energy
-        self.current_shell_id = 0
-        self.status = PacketStatus.IN_PROCESS
-        self.seed = seed
-        self.index = index
-
-    def initialize_line_id(self, numba_plasma, numba_model):
-        inverse_line_list_nu = numba_plasma.line_list_nu[::-1]
-        doppler_factor = get_doppler_factor(self.r, self.mu,
-                                            numba_model.time_explosion)
-        comov_nu = self.nu * doppler_factor
-        next_line_id = (len(numba_plasma.line_list_nu) -
-                        np.searchsorted(inverse_line_list_nu, comov_nu))
-        self.next_line_id = next_line_id
 
 @njit(**njit_dict)
 def update_line_estimators(estimators, r_packet, cur_line_id, distance_trace,
@@ -289,6 +296,10 @@ def trace_packet(r_packet, numba_model, numba_plasma, estimators, sigma_thomson)
                                         numba_model.time_explosion)
     comov_nu = r_packet.nu * doppler_factor
 
+    print("In trace packet: \n")
+    print("doppler_factor:", doppler_factor)
+    print("comov_nu:", comov_nu)
+
     cur_line_id = start_line_id # initializing varibale for Numba
     # - do not remove
 
@@ -302,6 +313,7 @@ def trace_packet(r_packet, numba_model, numba_plasma, estimators, sigma_thomson)
         print("nu_line:", nu_line)
         print("nu_line_last_interaction:", nu_line_last_interaction)
         print("cur_line_id:", cur_line_id)
+        print("close_line", r_packet.close_line)
 
         # Getting the tau for the next line
         tau_trace_line = numba_plasma.tau_sobolev[
@@ -362,7 +374,17 @@ def trace_packet(r_packet, numba_model, numba_plasma, estimators, sigma_thomson)
             interaction_type = InteractionType.LINE  # Line
             r_packet.next_line_id = cur_line_id
             distance = distance_trace
+
+            if cur_line_id != (len(numba_plasma.line_list_nu) - 1):
+                nu_diff = numba_plasma.line_list_nu[cur_line_id + 1] - nu_line
+                if np.abs(nu_diff / nu_line) < CLOSE_LINE_THRESHOLD:
+                    r_packet.close_line = 1
+                else:
+                    r_packet.close_line = 0
+
+            print("close_line in line check", r_packet.close_line)
             break
+
         # Recalculating distance_electron using tau_event -
         # tau_trace_line_combined
         print("tau event - tau trace line combined")
@@ -370,6 +392,15 @@ def trace_packet(r_packet, numba_model, numba_plasma, estimators, sigma_thomson)
         distance_electron = calculate_distance_electron(
             cur_electron_density, tau_event - tau_trace_line_combined,
         sigma_thomson)
+
+        if cur_line_id != (len(numba_plasma.line_list_nu) - 1):
+            nu_diff = numba_plasma.line_list_nu[cur_line_id + 1] - nu_line
+            if np.abs(nu_diff / nu_line) < CLOSE_LINE_THRESHOLD:
+                r_packet.close_line = 1
+            else:
+                r_packet.close_line = 0
+
+        print("close_line at end", r_packet.close_line)
 
     else:  # Executed when no break occurs in the for loop
         # We are beyond the line list now and the only next thing is to see
@@ -413,6 +444,11 @@ def move_r_packet(r_packet, distance, time_explosion, numba_estimator):
 
     comov_nu = r_packet.nu * doppler_factor
     comov_energy = r_packet.energy * doppler_factor
+
+    print("In move packet: \n")
+    print("doppler_factor:", doppler_factor)
+    print("comov_nu:", comov_nu)
+    print("comov_energy:", comov_energy)
 
     if montecarlo_configuration.full_relativity:
         distance = distance * doppler_factor
