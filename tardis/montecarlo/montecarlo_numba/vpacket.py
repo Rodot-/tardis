@@ -19,13 +19,14 @@ vpacket_spec = [
     ('next_line_id', int64),
     ('current_shell_id', int64),
     ('status', int64),
-    ('index', int64)
+    ('index', int64),
+    ('close_line', int64)
 ]
 
 @jitclass(vpacket_spec)
 class VPacket(object):
     def __init__(self, r, mu, nu, energy, current_shell_id, next_line_id,
-                 index=0):
+                 index=0, close_line=0):
         self.r = r
         self.mu = mu
         self.nu = nu
@@ -34,7 +35,7 @@ class VPacket(object):
         self.next_line_id = next_line_id
         self.status = PacketStatus.IN_PROCESS
         self.index = index
-
+        self.close_line = close_line
 
 
 @njit(**njit_dict)
@@ -201,7 +202,7 @@ def trace_vpacket_volley(r_packet, vpacket_collection, numba_model,
 
         v_packet = VPacket(r_packet.r, v_packet_mu, v_packet_nu, 
                            v_packet_energy, r_packet.current_shell_id, 
-                           r_packet.next_line_id, i)
+                           r_packet.next_line_id, i, 0)
 
         tau_vpacket = trace_vpacket(v_packet, numba_model, numba_plasma,
                                     sigma_thomson)
