@@ -423,10 +423,10 @@ compute_distance2line (rpacket_t * packet, const storage_model_t * storage)
       double ct = storage->time_explosion * C;
       double doppler_factor = rpacket_doppler_factor (packet, storage);
       double comov_nu = nu * doppler_factor;
-      print_log("->nu: %.16f\n", nu);
-      print_log("->nu_line: %.16f\n", nu_line);
-      print_log("->comov_nu: %.16f\n", comov_nu);
-      print_log("->doppler_factor: %.16f\n", doppler_factor);
+      printf_log("->nu: %.16f\n", nu);
+      printf_log("->nu_line: %.16f\n", nu_line);
+      printf_log("->comov_nu: %.16f\n", comov_nu);
+      printf_log("->doppler_factor: %.16f\n", doppler_factor);
       if ( (nu_diff = comov_nu - nu_line) >= 0)
         {
           if (!storage->full_relativity)
@@ -1107,6 +1107,7 @@ montecarlo_line_scatter (rpacket_t * packet, storage_model_t * storage,
   printf_log("->tau_line:%.16f\n", tau_line);
   printf_log("->tau_continuum:%.16f\n", tau_continuum);
   printf_log("->tau_combined:%.16f\n", tau_combined);
+  printf_log("->nu_line:%.16f\n", rpacket_get_nu_line (packet));
   if (next_line_id + 1 == storage->no_of_lines)
     {
       rpacket_set_last_line (packet, true);
@@ -1205,6 +1206,7 @@ void test_for_close_line (rpacket_t * packet, const storage_model_t * storage)
             rpacket_get_nu_line (packet)) < (rpacket_get_nu_line (packet)*
                                              1e-7))
     {
+	  print_log("test_close_line is true!\n");
       rpacket_set_close_line (packet, true);
     }
   print_log("Exiting test_for_close_line\n");
@@ -1378,6 +1380,7 @@ montecarlo_one_packet_loop (storage_model_t * storage, rpacket_t * packet,
         }
       double distance;
       print_log("Getting and Running Event Handler\n");
+
       get_event_handler (packet, storage, &distance, mt_state) (packet, storage,
                                                                 distance, mt_state);
       log_packet((*packet));
@@ -1418,6 +1421,15 @@ montecarlo_main_loop(storage_model_t * storage, int64_t virtual_packet_flag, int
   print_log("Entering monte_carlo_main_loop\n");
   int64_t finished_packets = 0;
   storage->virt_packet_count = 0;
+
+
+  FILE* fout = fopen("tau_sobelev.dat", "w");
+  int i;
+  for (i=0; i<(20*12407); ++i) {
+       fprintf(fout, "%.16f\n", storage->line_lists_tau_sobolevs[i]);
+  }
+  fclose(fout);
+ 
 #ifdef WITH_VPACKET_LOGGING
   storage->virt_packet_nus = (double *)safe_malloc(sizeof(double) * storage->no_of_packets);
   storage->virt_packet_energies = (double *)safe_malloc(sizeof(double) * storage->no_of_packets);
@@ -1426,9 +1438,11 @@ montecarlo_main_loop(storage_model_t * storage, int64_t virtual_packet_flag, int
   storage->virt_packet_last_line_interaction_in_id = (int64_t *)safe_malloc(sizeof(int64_t) * storage->no_of_packets);
   storage->virt_packet_last_line_interaction_out_id = (int64_t *)safe_malloc(sizeof(int64_t) * storage->no_of_packets);
   storage->virt_array_size = storage->no_of_packets;
+ 
 #endif // WITH_VPACKET_LOGGING
 #ifdef WITHOPENMP
   omp_set_dynamic(0);
+
   if (nthreads > 0)
     {
       omp_set_num_threads(nthreads);
