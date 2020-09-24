@@ -271,14 +271,9 @@ def trace_packet(r_packet, numba_model, numba_plasma, estimators, sigma_thomson)
 
     r_inner = numba_model.r_inner[r_packet.current_shell_id]
     r_outer = numba_model.r_outer[r_packet.current_shell_id]
-    """
-    if r_packet.index == 743:
-        sys.stdout = sys.__stdout__
-    else:
-        sys.stdout = dev_null
-    """
     print("current_shell_id:", r_packet.current_shell_id)
     print("index", r_packet.index)
+
 
     distance_boundary, delta_shell = calculate_distance_boundary(
         r_packet.r, r_packet.mu, r_inner, r_outer)
@@ -310,6 +305,7 @@ def trace_packet(r_packet, numba_model, numba_plasma, estimators, sigma_thomson)
 
     cur_line_id = start_line_id # initializing varibale for Numba
     # - do not remove
+
 
     for cur_line_id in range(start_line_id, len(numba_plasma.line_list_nu)):
 
@@ -356,14 +352,14 @@ def trace_packet(r_packet, numba_model, numba_plasma, estimators, sigma_thomson)
         print("tau_trace_line:", tau_trace_line)
 
         if ((distance_boundary <= distance_trace) and
-                (distance_boundary <= distance_electron)):
+                (distance_boundary <= distance_electron)) and distance_trace != 0.0:
             interaction_type = InteractionType.BOUNDARY  # BOUNDARY
             r_packet.next_line_id = cur_line_id
             distance = distance_boundary
             break
 
         if ((distance_electron < distance_trace) and
-                (distance_electron < distance_boundary)):
+                (distance_electron < distance_boundary)) and distance_trace != 0.0:
             interaction_type = InteractionType.ESCATTERING
             # print('scattering')
             distance = distance_electron
