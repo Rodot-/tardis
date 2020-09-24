@@ -63,7 +63,7 @@ class RPacket(object):
                                             numba_model.time_explosion)
         comov_nu = self.nu * doppler_factor
         next_line_id = (len(numba_plasma.line_list_nu) -
-                        np.searchsorted(inverse_line_list_nu, comov_nu))
+                        np.searchsorted(inverse_line_list_nu, comov_nu, side="right"))
         self.next_line_id = next_line_id
 
 
@@ -125,6 +125,7 @@ def calculate_distance_line(
     if close_line > 0:
         nu_diff = 0.0
         r_packet.close_line = 0
+        print("r_packet.close_line set to 0 in distance_line")
 
     if nu_diff >= 0:
         distance = (nu_diff / nu) * C_SPEED_OF_LIGHT * time_explosion
@@ -313,6 +314,7 @@ def trace_packet(r_packet, numba_model, numba_plasma, estimators, sigma_thomson)
         print("nu_line:", nu_line)
         print("nu_line_last_interaction:", nu_line_last_interaction)
         print("cur_line_id:", cur_line_id)
+        print("current_shell_id", r_packet.current_shell_id)
         print("close_line", r_packet.close_line)
 
         # Getting the tau for the next line
@@ -374,15 +376,20 @@ def trace_packet(r_packet, numba_model, numba_plasma, estimators, sigma_thomson)
             interaction_type = InteractionType.LINE  # Line
             r_packet.next_line_id = cur_line_id
             distance = distance_trace
-
+            """
             if cur_line_id != (len(numba_plasma.line_list_nu) - 1):
                 nu_diff = numba_plasma.line_list_nu[cur_line_id + 1] - nu_line
+                print("line_list_nu[cur_line_id + 1]", numba_plasma.line_list_nu[cur_line_id + 1])
+                print("nu_line:", nu_line)
+                print("nu_diff:", nu_diff)
+                print("close line check:", np.abs(nu_diff / nu_line))
                 if np.abs(nu_diff / nu_line) < CLOSE_LINE_THRESHOLD:
                     r_packet.close_line = 1
                 else:
                     r_packet.close_line = 0
 
             print("close_line in line check", r_packet.close_line)
+            """
             break
 
         # Recalculating distance_electron using tau_event -
@@ -394,11 +401,7 @@ def trace_packet(r_packet, numba_model, numba_plasma, estimators, sigma_thomson)
         sigma_thomson)
 
         if cur_line_id != (len(numba_plasma.line_list_nu) - 1):
-            nu_diff = numba_plasma.line_list_nu[cur_line_id + 1] - nu_line
-            if np.abs(nu_diff / nu_line) < CLOSE_LINE_THRESHOLD:
-                r_packet.close_line = 1
-            else:
-                r_packet.close_line = 0
+            test_for_close_line(r_packet, cur_line_id, nu_line)
 
         print("close_line at end", r_packet.close_line)
 
@@ -579,3 +582,15 @@ def angle_aberration_LF_to_CMF(r_packet, time_explosion, mu):
     ct = C_SPEED_OF_LIGHT * time_explosion
     beta = r_packet.r /(ct)
     return (mu - beta) / (1.0 - beta * mu)
+
+@njit(**njit_dict)
+def test_for_close_line(r_packet, line_id, nu_line):
+    nu_diff = numba_plasma.line_list_nu[line_id + 1] - nu_line
+    print("line_list_nu[cur_line_id + 1]", numba_plasma.line_list_nu[line_id + 1])
+    print("nu_line:", nu_line)
+    print("nu_diff:", nu_diff)
+    print("line_id:", line_id)
+    print("close line check:", np.abs(nu_diff / nu_line))
+    if ((numba_plasma.line_list_nu[line_id + 1] - nu_line)
+            < (nu_line * CLOSE_LINE_THRESHOLD)):
+        r_packet.close_line = 1

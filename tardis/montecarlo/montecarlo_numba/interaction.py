@@ -1,4 +1,5 @@
 from numba import njit
+import numpy as np
 from tardis.montecarlo.montecarlo_numba import njit_dict
 from tardis.montecarlo.montecarlo_numba.numba_interface import (
     LineInteractionType)
@@ -6,9 +7,10 @@ from tardis.montecarlo.montecarlo_numba.numba_interface import (
 from tardis.montecarlo import montecarlo_configuration as montecarlo_configuration
 from tardis.montecarlo.montecarlo_numba.r_packet import (
     get_doppler_factor, get_inverse_doppler_factor, get_random_mu,
-    angle_aberration_CMF_to_LF)
+    angle_aberration_CMF_to_LF, test_for_close_line)
 from tardis.montecarlo.montecarlo_numba.macro_atom import macro_atom
 
+CLOSE_LINE_THRESHOLD = 1e-7
 
 @njit(**njit_dict)
 def thomson_scatter(r_packet, time_explosion):
@@ -111,6 +113,13 @@ def line_emission(r_packet, emission_line_id, time_explosion,
     r_packet.nu = numba_plasma.line_list_nu[
                       emission_line_id] * inverse_doppler_factor
     r_packet.next_line_id = emission_line_id + 1
+    nu_line = numba_plasma.line_list_nu[emission_line_id]
+
+    if emission_line_id != (len(numba_plasma.line_list_nu) - 1):
+        test_for_close_line(r_packet, emission_line_id, nu_line)
+
+    print("close_line in line check", r_packet.close_line)
+
     if montecarlo_configuration.full_relativity:
         r_packet.mu = angle_aberration_CMF_to_LF(
             r_packet,
