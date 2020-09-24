@@ -115,8 +115,11 @@ def line_emission(r_packet, emission_line_id, time_explosion,
     r_packet.next_line_id = emission_line_id + 1
     nu_line = numba_plasma.line_list_nu[emission_line_id]
 
+    print("Random number in line_emission (to match C)")
+    np.random.random()
+
     if emission_line_id != (len(numba_plasma.line_list_nu) - 1):
-        test_for_close_line(r_packet, emission_line_id, nu_line)
+        test_for_close_line(r_packet, emission_line_id + 1, nu_line, numba_plasma)
 
     print("close_line in line check", r_packet.close_line)
 

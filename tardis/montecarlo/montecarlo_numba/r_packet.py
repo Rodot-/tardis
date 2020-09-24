@@ -2,7 +2,7 @@ import numpy as np
 from enum import IntEnum
 from numba import int64, float64
 from numba import jitclass, njit
-
+import sys
 
 from tardis.montecarlo.montecarlo_numba import njit_dict
 from tardis.montecarlo import montecarlo_configuration as montecarlo_configuration
@@ -10,6 +10,8 @@ from tardis.montecarlo.montecarlo_numba.montecarlo_logger import log_decorator
 from tardis import constants as const
 
 SIGMA_THOMSON = const.sigma_T.to('cm^2').value
+
+#dev_null = open('/dev/null', 'w')
 
 class MonteCarloException(ValueError):
     pass
@@ -269,7 +271,12 @@ def trace_packet(r_packet, numba_model, numba_plasma, estimators, sigma_thomson)
 
     r_inner = numba_model.r_inner[r_packet.current_shell_id]
     r_outer = numba_model.r_outer[r_packet.current_shell_id]
-
+    """
+    if r_packet.index == 743:
+        sys.stdout = sys.__stdout__
+    else:
+        sys.stdout = dev_null
+    """
     print("current_shell_id:", r_packet.current_shell_id)
     print("index", r_packet.index)
 
@@ -392,18 +399,19 @@ def trace_packet(r_packet, numba_model, numba_plasma, estimators, sigma_thomson)
             """
             break
 
+        if cur_line_id != (len(numba_plasma.line_list_nu) - 1):
+            test_for_close_line(r_packet, cur_line_id + 1, nu_line, numba_plasma)
+
+        print("close_line at end", r_packet.close_line)
+
         # Recalculating distance_electron using tau_event -
         # tau_trace_line_combined
         print("tau event - tau trace line combined")
         print(tau_event - tau_trace_line_combined)
-        distance_electron = calculate_distance_electron(
-            cur_electron_density, tau_event - tau_trace_line_combined,
-        sigma_thomson)
-
-        if cur_line_id != (len(numba_plasma.line_list_nu) - 1):
-            test_for_close_line(r_packet, cur_line_id, nu_line)
-
-        print("close_line at end", r_packet.close_line)
+        if not r_packet.close_line:
+            distance_electron = calculate_distance_electron(
+                cur_electron_density, tau_event - tau_trace_line_combined,
+            sigma_thomson)
 
     else:  # Executed when no break occurs in the for loop
         # We are beyond the line list now and the only next thing is to see
@@ -414,7 +422,7 @@ def trace_packet(r_packet, numba_model, numba_plasma, estimators, sigma_thomson)
         if distance_electron < distance_boundary:
             distance = distance_electron
             interaction_type = InteractionType.ESCATTERING
-            # print('scattering')
+            # print_('scattering')
         else:
             distance = distance_boundary
             interaction_type = InteractionType.BOUNDARY
@@ -584,13 +592,13 @@ def angle_aberration_LF_to_CMF(r_packet, time_explosion, mu):
     return (mu - beta) / (1.0 - beta * mu)
 
 @njit(**njit_dict)
-def test_for_close_line(r_packet, line_id, nu_line):
-    nu_diff = numba_plasma.line_list_nu[line_id + 1] - nu_line
-    print("line_list_nu[cur_line_id + 1]", numba_plasma.line_list_nu[line_id + 1])
+def test_for_close_line(r_packet, line_id, nu_line, numba_plasma):
+    nu_diff = numba_plasma.line_list_nu[line_id] - nu_line
+    print("line_list_nu[cur_line_id + 1]", numba_plasma.line_list_nu[line_id])
     print("nu_line:", nu_line)
     print("nu_diff:", nu_diff)
     print("line_id:", line_id)
     print("close line check:", np.abs(nu_diff / nu_line))
-    if ((numba_plasma.line_list_nu[line_id + 1] - nu_line)
+    if (np.abs(numba_plasma.line_list_nu[line_id] - nu_line)
             < (nu_line * CLOSE_LINE_THRESHOLD)):
         r_packet.close_line = 1
