@@ -9,7 +9,7 @@ import numpy as np
 from tardis.montecarlo.montecarlo_numba.r_packet import (
     calculate_distance_boundary, get_doppler_factor, calculate_distance_line,
     calculate_tau_electron, PacketStatus, move_packet_across_shell_boundary,
-    angle_aberration_LF_to_CMF, angle_aberration_CMF_to_LF)
+    angle_aberration_LF_to_CMF, angle_aberration_CMF_to_LF, test_for_close_line)
 
 vpacket_spec = [
     ('r', float64),
@@ -65,6 +65,9 @@ def trace_vpacket_within_shell(v_packet, numba_model, numba_plasma,
     comov_nu = v_packet.nu * doppler_factor
     cur_line_id = start_line_id
 
+    if cur_line_id != (len(numba_plasma.line_list_nu) - 1):
+        test_for_close_line(v_packet, cur_line_id + 1, numba_plasma.line_list_nu[cur_line_id], numba_plasma)
+
     for cur_line_id in range(start_line_id, len(numba_plasma.line_list_nu)):
         if tau_trace_combined > 10: ### FIXME ?????
             break
@@ -84,8 +87,6 @@ def trace_vpacket_within_shell(v_packet, numba_model, numba_plasma,
             break
         
         tau_trace_combined += tau_trace_line
-
-
 
     else:
         if cur_line_id == (len(numba_plasma.line_list_nu) - 1):
@@ -202,7 +203,13 @@ def trace_vpacket_volley(r_packet, vpacket_collection, numba_model,
 
         v_packet = VPacket(r_packet.r, v_packet_mu, v_packet_nu, 
                            v_packet_energy, r_packet.current_shell_id, 
-                           r_packet.next_line_id, i, 0)
+                           r_packet.next_line_id, i, r_packet.close_line)
+
+        print("VPacket created")
+        print("mu:", v_packet.mu)
+        print("nu:", v_packet.nu)
+        print("current_shell_id", v_packet.current_shell_id)
+        print("close_line", v_packet.close_line)
 
         tau_vpacket = trace_vpacket(v_packet, numba_model, numba_plasma,
                                     sigma_thomson)
@@ -212,3 +219,6 @@ def trace_vpacket_volley(r_packet, vpacket_collection, numba_model,
         vpacket_collection.nus[vpacket_collection.idx] = v_packet.nu
         vpacket_collection.energies[vpacket_collection.idx] = v_packet.energy
         vpacket_collection.idx += 1
+
+        print("Random to match C code event_random in tau_russian check")
+        np.random.random()
