@@ -134,6 +134,9 @@ def trace_vpacket(v_packet, numba_model, numba_plasma, sigma_thomson):
         print("close_line", v_packet.close_line)
         print("tau_trace_combined", tau_trace_combined)
 
+        move_packet_across_shell_boundary(v_packet, delta_shell, 
+        len(numba_model.r_inner))
+
         if tau_trace_combined > montecarlo_configuration.tau_russian:
             print("Random to match C code event_random in tau_russian check")
             event_random = np.random.random()
@@ -144,9 +147,6 @@ def trace_vpacket(v_packet, numba_model, numba_plasma, sigma_thomson):
                 v_packet.energy = v_packet.energy / montecarlo_configuration.survival_probability * \
                                    np.exp(-tau_trace_combined)
                 tau_trace_combined = 0.0
-
-        move_packet_across_shell_boundary(v_packet, delta_shell, 
-        len(numba_model.r_inner))
         
         # Moving the v_packet
         new_r = np.sqrt(v_packet.r**2 + distance_boundary**2 +
