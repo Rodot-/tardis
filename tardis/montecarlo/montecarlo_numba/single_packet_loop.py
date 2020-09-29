@@ -114,6 +114,10 @@ def single_packet_loop(r_packet, numba_model, numba_plasma, estimators,
             print("r:", r_packet.r)
             print("index", r_packet.index)
 
+            print("Random number in base.py (to match C)")
+            ran = np.random.random()
+            print(-np.log(ran))
+
         elif interaction_type == InteractionType.LINE:
             print("LINE")
 
@@ -131,6 +135,11 @@ def single_packet_loop(r_packet, numba_model, numba_plasma, estimators,
             print("LINE scatter")
             line_scatter(r_packet, numba_model.time_explosion,
                          line_interaction_type, numba_plasma)
+
+            print("Random number in base.py (to match C)")
+            ran = np.random.random()
+            print(-np.log(ran))
+
             trace_vpacket_volley(
                 r_packet, vpacket_collection, numba_model, numba_plasma,
                 sigma_thomson)
@@ -160,9 +169,13 @@ def single_packet_loop(r_packet, numba_model, numba_plasma, estimators,
             print("E SCATTERED result:")
             print("energy:", r_packet.energy)
             print("nu:", r_packet.nu)
-            print("mu:", r_packet.mu)
+            #print("mu:", r_packet.mu)
             print("r:", r_packet.r)
             print("index", r_packet.index)
+
+            print("Random number in base.py (to match C)")
+            ran = np.random.random()
+            print(-np.log(ran))
 
             trace_vpacket_volley(r_packet, vpacket_collection, numba_model,
                                  numba_plasma, sigma_thomson)
