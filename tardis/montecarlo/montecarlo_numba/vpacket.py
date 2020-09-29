@@ -69,8 +69,8 @@ def trace_vpacket_within_shell(v_packet, numba_model, numba_plasma,
         test_for_close_line(v_packet, cur_line_id + 1, numba_plasma.line_list_nu[cur_line_id], numba_plasma)
 
     for cur_line_id in range(start_line_id, len(numba_plasma.line_list_nu)):
-        if tau_trace_combined > 10: ### FIXME ?????
-            break
+        #if tau_trace_combined > 10: ### FIXME ?????
+        #    break
 
         nu_line = numba_plasma.line_list_nu[cur_line_id]
         # TODO: Check if this is what the C code does
@@ -82,6 +82,15 @@ def trace_vpacket_within_shell(v_packet, numba_model, numba_plasma,
             v_packet, comov_nu, nu_line_last_interaction,
             nu_line, numba_model.time_explosion
         )
+
+        print("Tracing vpacket through shell")
+        print("mu:", v_packet.mu)
+        print("nu:", v_packet.nu)
+        print("current_shell_id", v_packet.current_shell_id)
+        print("close_line", v_packet.close_line)
+        print("tau_trace_combined", tau_trace_combined)
+        print("distance_boundary", distance_boundary)
+        print("distance_trace_line", distance_trace_line)
 
         if distance_boundary <= distance_trace_line:
             break
@@ -116,18 +125,46 @@ def trace_vpacket(v_packet, numba_model, numba_plasma, sigma_thomson):
             v_packet, numba_model, numba_plasma, sigma_thomson
         )
         tau_trace_combined += tau_trace_combined_shell
-        if tau_trace_combined > 10:
-            break
+
+        print("In trace_vpacket after trace within shell")
+        print("mu:", v_packet.mu)
+        print("nu:", v_packet.nu)
+        print("r:", v_packet.r)
+        print("current_shell_id", v_packet.current_shell_id)
+        print("close_line", v_packet.close_line)
+        print("tau_trace_combined", tau_trace_combined)
+
+        if tau_trace_combined > montecarlo_configuration.tau_russian:
+            print("Random to match C code event_random in tau_russian check")
+            event_random = np.random.random()
+            if event_random > montecarlo_configuration.survival_probability:
+                v_packet.energy = 0.0
+                v_packet.status = PacketStatus.EMITTED
+            else:
+                v_packet.energy = v_packet.energy / montecarlo_configuration.survival_probability * \
+                                   np.exp(-tau_trace_combined)
+                tau_trace_combined = 0.0
+
         move_packet_across_shell_boundary(v_packet, delta_shell, 
         len(numba_model.r_inner))
-        if v_packet.status == PacketStatus.EMITTED:
-            break
         
         # Moving the v_packet
         new_r = np.sqrt(v_packet.r**2 + distance_boundary**2 +
                          2.0 * v_packet.r * distance_boundary * v_packet.mu)
         v_packet.mu = (v_packet.mu * v_packet.r + distance_boundary) / new_r
         v_packet.r = new_r
+
+        print("In trace_vpacket after moving")
+        print("mu:", v_packet.mu)
+        print("nu:", v_packet.nu)
+        print("r:", v_packet.r)
+        print("current_shell_id", v_packet.current_shell_id)
+        print("close_line", v_packet.close_line)
+        print("tau_trace_combined", tau_trace_combined)
+
+        if v_packet.status == PacketStatus.EMITTED:
+            break
+
     return tau_trace_combined
 
 @njit(**njit_dict)
@@ -213,12 +250,9 @@ def trace_vpacket_volley(r_packet, vpacket_collection, numba_model,
 
         tau_vpacket = trace_vpacket(v_packet, numba_model, numba_plasma,
                                     sigma_thomson)
-        
+
         v_packet.energy *= np.exp(-tau_vpacket)
 
         vpacket_collection.nus[vpacket_collection.idx] = v_packet.nu
         vpacket_collection.energies[vpacket_collection.idx] = v_packet.energy
         vpacket_collection.idx += 1
-
-        print("Random to match C code event_random in tau_russian check")
-        np.random.random()

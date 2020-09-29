@@ -94,9 +94,6 @@ def montecarlo_main_loop(packet_collection, numba_model, numba_plasma,
         loop = single_packet_loop(r_packet, numba_model, numba_plasma, estimators,
                            vpacket_collection, sigma_thomson)
 
-        print("Random number in base.py (to match C)")
-        ran = np.random.random()
-        print(-np.log(ran))
         # if loop and 'stop' in loop:
         #     raise MonteCarloException
 
