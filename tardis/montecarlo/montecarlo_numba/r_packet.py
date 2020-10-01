@@ -590,11 +590,8 @@ def angle_aberration_LF_to_CMF(r_packet, time_explosion, mu):
 @njit(**njit_dict)
 def test_for_close_line(r_packet, line_id, nu_line, numba_plasma):
     nu_diff = numba_plasma.line_list_nu[line_id] - nu_line
-    print("line_list_nu[cur_line_id + 1]", numba_plasma.line_list_nu[line_id])
-    print("nu_line:", nu_line)
-    print("nu_diff:", nu_diff)
-    print("line_id:", line_id)
     print("close line check:", np.abs(nu_diff / nu_line))
     if (np.abs(numba_plasma.line_list_nu[line_id] - nu_line)
             < (nu_line * CLOSE_LINE_THRESHOLD)):
+        print("close line check passed set to 1")
         r_packet.close_line = 1

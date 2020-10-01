@@ -65,9 +65,6 @@ def trace_vpacket_within_shell(v_packet, numba_model, numba_plasma,
     comov_nu = v_packet.nu * doppler_factor
     cur_line_id = start_line_id
 
-    if cur_line_id != (len(numba_plasma.line_list_nu) - 1):
-        test_for_close_line(v_packet, cur_line_id + 1, numba_plasma.line_list_nu[cur_line_id], numba_plasma)
-
     for cur_line_id in range(start_line_id, len(numba_plasma.line_list_nu)):
         #if tau_trace_combined > 10: ### FIXME ?????
         #    break
@@ -86,16 +83,23 @@ def trace_vpacket_within_shell(v_packet, numba_model, numba_plasma,
         print("Tracing vpacket through shell")
         print("mu:", v_packet.mu)
         print("nu:", v_packet.nu)
-        print("current_shell_id", v_packet.current_shell_id)
-        print("close_line", v_packet.close_line)
-        print("tau_trace_combined", tau_trace_combined)
-        print("distance_boundary", distance_boundary)
-        print("distance_trace_line", distance_trace_line)
+        print("current_shell_id:", v_packet.current_shell_id)
+        print("close_line:", v_packet.close_line)
+        print("comov_nu:", comov_nu)
+        print("nu_line:", nu_line)
+        print("nu_line_last_interaction:", nu_line_last_interaction)
+        print("tau_trace_combined_shell:", tau_trace_combined)
+        print("tau_trace_line:", tau_trace_line)
+        print("distance_boundary:", distance_boundary)
+        print("distance_trace_line:", distance_trace_line)
 
         if distance_boundary <= distance_trace_line:
             break
         
         tau_trace_combined += tau_trace_line
+
+        if cur_line_id != (len(numba_plasma.line_list_nu) - 1):
+            test_for_close_line(v_packet, cur_line_id + 1, numba_plasma.line_list_nu[cur_line_id], numba_plasma)
 
     else:
         if cur_line_id == (len(numba_plasma.line_list_nu) - 1):
@@ -130,9 +134,10 @@ def trace_vpacket(v_packet, numba_model, numba_plasma, sigma_thomson):
         print("mu:", v_packet.mu)
         print("nu:", v_packet.nu)
         print("r:", v_packet.r)
-        print("current_shell_id", v_packet.current_shell_id)
-        print("close_line", v_packet.close_line)
-        print("tau_trace_combined", tau_trace_combined)
+        print("current_shell_id:", v_packet.current_shell_id)
+        print("close_line:", v_packet.close_line)
+        print("tau_trace_combined_shell", tau_trace_combined_shell)
+        print("tau_trace_combined:", tau_trace_combined)
 
         move_packet_across_shell_boundary(v_packet, delta_shell, 
         len(numba_model.r_inner))
@@ -158,9 +163,9 @@ def trace_vpacket(v_packet, numba_model, numba_plasma, sigma_thomson):
         print("mu:", v_packet.mu)
         print("nu:", v_packet.nu)
         print("r:", v_packet.r)
-        print("current_shell_id", v_packet.current_shell_id)
-        print("close_line", v_packet.close_line)
-        print("tau_trace_combined", tau_trace_combined)
+        print("current_shell_id:", v_packet.current_shell_id)
+        print("close_line:", v_packet.close_line)
+        print("tau_trace_combined:", tau_trace_combined)
 
         if v_packet.status == PacketStatus.EMITTED:
             break
