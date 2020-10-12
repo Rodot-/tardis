@@ -104,26 +104,29 @@ def calculate_distance_line(
 
     """
 
-    nu = r_packet.nu
 
     if is_last_line:
         return MISS_DISTANCE
 
-    nu_diff = comov_nu - nu_line
 
     # for numerical reasons, if line is too close, we set the distance to 0.
     if r_packet.is_close_line:
-        nu_diff = 0.0
+        #nu_diff = 0.0
         r_packet.is_close_line = False
+        return 0.0
 
-    if nu_diff >= 0:
-        distance = (nu_diff / nu) * C_SPEED_OF_LIGHT * time_explosion
+    nu_diff = comov_nu - nu_line
+    #if nu_diff >= 0:
+    #distance = (nu_diff / nu) * C_SPEED_OF_LIGHT * time_explosion
+    #else:
+    #    print('WARNING: nu difference is less than 0.0')
+    #    #raise MonteCarloException('nu difference is less than 0.0; for more'
+    #    #                          ' information, see print statement beforehand')
+
+    nu = r_packet.nu
+    if not numba_config.ENABLE_FULL_RELATIVITY:
+        return (nu_diff / nu) * C_SPEED_OF_LIGHT * time_explosion
     else:
-        print('WARNING: nu difference is less than 0.0')
-        #raise MonteCarloException('nu difference is less than 0.0; for more'
-        #                          ' information, see print statement beforehand')
-
-    if numba_config.ENABLE_FULL_RELATIVITY:
         return calculate_distance_line_full_relativity(nu_line, nu,
                                                         time_explosion,
                                                         r_packet)
@@ -266,7 +269,8 @@ def trace_packet(r_packet, numba_model, numba_plasma, estimators):
     start_line_id = r_packet.next_line_id
 
     # defining taus
-    tau_event = -np.log(1 - np.random.random())
+    #tau_event = -np.log(1 - np.random.random())
+    tau_event = np.random.exponential()
     tau_trace_line_combined = 0.0
 
     # e scattering initialization
@@ -283,6 +287,8 @@ def trace_packet(r_packet, numba_model, numba_plasma, estimators):
 
     cur_line_id = start_line_id # initializing varibale for Numba
     # - do not remove
+    last_line_id = len(numba_plasma.line_list_nu) - 1
+    is_last_line = False
 
     for cur_line_id in range(start_line_id, len(numba_plasma.line_list_nu)):
 
@@ -290,32 +296,15 @@ def trace_packet(r_packet, numba_model, numba_plasma, estimators):
         nu_line = numba_plasma.line_list_nu[cur_line_id]
         nu_line_last_interaction = numba_plasma.line_list_nu[cur_line_id - 1]
 
-        # Getting the tau for the next line
-        tau_trace_line = numba_plasma.tau_sobolev[
-            cur_line_id, r_packet.current_shell_id]
-
-        # Adding it to the tau_trace_line_combined
-        tau_trace_line_combined += tau_trace_line
-
-        # Calculating the distance until the current photons co-moving nu
+                # Calculating the distance until the current photons co-moving nu
         # redshifts to the line frequency
 
-        if cur_line_id == len(numba_plasma.line_list_nu) - 1:
-            is_last_line = True
-        else:
-            is_last_line = False
+        is_last_line = cur_line_id == last_line_id
 
         distance_trace = calculate_distance_line(
             r_packet, comov_nu, is_last_line,
             nu_line, numba_model.time_explosion
         )
-
-        # calculating the tau electron of how far the trace has progressed
-        tau_trace_electron = calculate_tau_electron(cur_electron_density,
-                                                    distance_trace)
-
-        # calculating the trace
-        tau_trace_combined = tau_trace_line_combined + tau_trace_electron
 
         if ((distance_boundary <= distance_trace) and
                 (distance_boundary <= distance_electron)) and distance_trace != 0.0:
@@ -339,6 +328,21 @@ def trace_packet(r_packet, numba_model, numba_plasma, estimators):
         update_line_estimators(
             estimators, r_packet, cur_line_id, distance_trace,
             numba_model.time_explosion)
+        # Getting the tau for the next line
+        tau_trace_line = numba_plasma.tau_sobolev[
+            cur_line_id, r_packet.current_shell_id]
+
+        # Adding it to the tau_trace_line_combined
+        tau_trace_line_combined += tau_trace_line
+
+
+        # calculating the tau electron of how far the trace has progressed
+        tau_trace_electron = calculate_tau_electron(cur_electron_density,
+                                                    distance_trace)
+
+        # calculating the trace
+        tau_trace_combined = tau_trace_line_combined + tau_trace_electron
+
 
         if tau_trace_combined > tau_event \
                 and not montecarlo_configuration.disable_line_scattering:
@@ -347,7 +351,7 @@ def trace_packet(r_packet, numba_model, numba_plasma, estimators):
             distance = distance_trace
             break
 
-        if cur_line_id != (len(numba_plasma.line_list_nu) - 1):
+        if not is_last_line:
             test_for_close_line(r_packet, cur_line_id + 1, nu_line, numba_plasma)
 
         # Recalculating distance_electron using tau_event -
@@ -358,9 +362,9 @@ def trace_packet(r_packet, numba_model, numba_plasma, estimators):
     else:  # Executed when no break occurs in the for loop
         # We are beyond the line list now and the only next thing is to see
         # if we are interacting with the boundary or electron scattering
-        if cur_line_id == (len(numba_plasma.line_list_nu) - 1):
-            # Treatment for last line
-            cur_line_id += 1
+        #if cur_line_id == (len(numba_plasma.line_list_nu) - 1):
+        # Treatment for last line
+        cur_line_id += 1
         if distance_electron < distance_boundary:
             distance = distance_electron
             interaction_type = InteractionType.ESCATTERING
@@ -459,7 +463,9 @@ def line_emission(r_packet, emission_line_id, numba_plasma, time_explosion):
                                         time_explosion,)
     r_packet.nu = numba_plasma.line_list_nu[emission_line_id] / doppler_factor
     r_packet.next_line_id = emission_line_id + 1
-    if montecarlo_configuration.full_relativity:
+    if not numba_config.ENABLE_FILL_RELATIVITY:
+        pass
+    else:
         r_packet.mu = angle_aberration_CMF_to_LF(
             r_packet,
             time_explosion
@@ -518,6 +524,5 @@ def angle_aberration_LF_to_CMF(r_packet, time_explosion, mu):
 
 @njit(**njit_dict)
 def test_for_close_line(r_packet, line_id, nu_line, numba_plasma):
-    if (abs(numba_plasma.line_list_nu[line_id] - nu_line)
-            < (nu_line * CLOSE_LINE_THRESHOLD)):
-        r_packet.is_close_line = True
+    r_packet.is_close_line = (abs(numba_plasma.line_list_nu[line_id] - nu_line)
+            < (nu_line * CLOSE_LINE_THRESHOLD))
