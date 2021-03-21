@@ -1,6 +1,8 @@
 ## Change Log
 
-### upcoming (2021/03/14 23:54 +00:00)
+### upcoming (2021/03/21 23:55 +00:00)
+- [#1481](https://github.com/tardis-sn/tardis/pull/1481) Added Documentation for Parallel execution with Numba and OpenMP (#1481) (@aribalam)
+- [#1145](https://github.com/tardis-sn/tardis/pull/1145) Add photoionization-related rates (#1145) (@chvogl)
 - [#1470](https://github.com/tardis-sn/tardis/pull/1470) Incorporating old physics section of the documentation (#1470) (@smithis7)
 - [#1459](https://github.com/tardis-sn/tardis/pull/1459) Removed the deprecated --with-vpacket-logging flag (#1459) (@antreev-brar)
 - [#1462](https://github.com/tardis-sn/tardis/pull/1462) Renamed widgets subpackage to visualization and restructured modules within it (#1462) (@jaladh-singhal)
