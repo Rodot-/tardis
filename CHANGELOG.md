@@ -1,6 +1,14 @@
 ## Change Log
 
-### upcoming (2021/03/21 23:55 +00:00)
+### upcoming (2021/03/28 23:54 +00:00)
+- [#1506](https://github.com/tardis-sn/tardis/pull/1506) Add ability to plot only top contributing elements to SDEC plot (#1506) (@MarkMageeAstro)
+- [#1509](https://github.com/tardis-sn/tardis/pull/1509) Collisional ionization (#1509) (@chvogl)
+- [#1477](https://github.com/tardis-sn/tardis/pull/1477) added option for keyword arguments in spectrum plot function (#1477) (@aribalam)
+- [#1474](https://github.com/tardis-sn/tardis/pull/1474) Updated Z value of O (#1474) (@ankur-soni97)
+- [#1498](https://github.com/tardis-sn/tardis/pull/1498) Feature request: add virtual-packet-logging option to run_tardis() (#1498) (@yuyizheng1112)
+- [#1502](https://github.com/tardis-sn/tardis/pull/1502) add missing / in .coveragerc file (#1502) (@yuyizheng1112)
+- [#1492](https://github.com/tardis-sn/tardis/pull/1492) Fix docstring mistakes in #1145 (#1492) (@chvogl)
+- [#1505](https://github.com/tardis-sn/tardis/pull/1505) Fixing hyperlink (#1505) (@KevinCawley)
 - [#1481](https://github.com/tardis-sn/tardis/pull/1481) Added Documentation for Parallel execution with Numba and OpenMP (#1481) (@aribalam)
 - [#1145](https://github.com/tardis-sn/tardis/pull/1145) Add photoionization-related rates (#1145) (@chvogl)
 - [#1470](https://github.com/tardis-sn/tardis/pull/1470) Incorporating old physics section of the documentation (#1470) (@smithis7)
