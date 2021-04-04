@@ -1,6 +1,6 @@
 ## Change Log
 
-### upcoming (2021/03/28 23:54 +00:00)
+### upcoming (2021/04/04 23:55 +00:00)
 - [#1506](https://github.com/tardis-sn/tardis/pull/1506) Add ability to plot only top contributing elements to SDEC plot (#1506) (@MarkMageeAstro)
 - [#1509](https://github.com/tardis-sn/tardis/pull/1509) Collisional ionization (#1509) (@chvogl)
 - [#1477](https://github.com/tardis-sn/tardis/pull/1477) added option for keyword arguments in spectrum plot function (#1477) (@aribalam)
