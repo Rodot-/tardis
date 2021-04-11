@@ -1,6 +1,12 @@
 ## Change Log
 
-### upcoming (2021/04/04 23:55 +00:00)
+### upcoming (2021/04/11 23:55 +00:00)
+- [#1478](https://github.com/tardis-sn/tardis/pull/1478) Create a symlink of tardis_example.yml (#1478) (@yuyizheng1112)
+- [#1527](https://github.com/tardis-sn/tardis/pull/1527) rtd-theme is incompatible with docutils 0.17 (#1527) (@atharva-2001)
+- [#1526](https://github.com/tardis-sn/tardis/pull/1526) enable manual trigger for docs (#1526) (@epassaro)
+- [#1517](https://github.com/tardis-sn/tardis/pull/1517) Add catch for missing elements in SDEC plot (#1517) (@MarkMageeAstro)
+- [#1483](https://github.com/tardis-sn/tardis/pull/1483) corrected_csvy_model_files (#1483) (@antreev-brar)
+- [#1479](https://github.com/tardis-sn/tardis/pull/1479) getting rid of PerformanceWarning: indexing past lexsort depth may impact performance. (#1479) (@atharva-2001)
 - [#1506](https://github.com/tardis-sn/tardis/pull/1506) Add ability to plot only top contributing elements to SDEC plot (#1506) (@MarkMageeAstro)
 - [#1509](https://github.com/tardis-sn/tardis/pull/1509) Collisional ionization (#1509) (@chvogl)
 - [#1477](https://github.com/tardis-sn/tardis/pull/1477) added option for keyword arguments in spectrum plot function (#1477) (@aribalam)
