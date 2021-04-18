@@ -1,6 +1,12 @@
 ## Change Log
 
-### upcoming (2021/04/11 23:55 +00:00)
+### upcoming (2021/04/18 23:54 +00:00)
+- [#1540](https://github.com/tardis-sn/tardis/pull/1540) fix version number displayed in docs (#1540) (@epassaro)
+- [#1538](https://github.com/tardis-sn/tardis/pull/1538) clean template files (#1538) (@epassaro)
+- [#1512](https://github.com/tardis-sn/tardis/pull/1512) Change the default number of interpolate_shells for the formal integral (#1512) (@chvogl)
+- [#1499](https://github.com/tardis-sn/tardis/pull/1499) Enable full tests for Formal Integral (#1499) (@aribalam)
+- [#1530](https://github.com/tardis-sn/tardis/pull/1530) Typos in git_workflow guide (#1530) (@Molkree)
+- [#1535](https://github.com/tardis-sn/tardis/pull/1535) Fix macOS tests (pickle protocol 5) (#1535) (@epassaro)
 - [#1478](https://github.com/tardis-sn/tardis/pull/1478) Create a symlink of tardis_example.yml (#1478) (@yuyizheng1112)
 - [#1527](https://github.com/tardis-sn/tardis/pull/1527) rtd-theme is incompatible with docutils 0.17 (#1527) (@atharva-2001)
 - [#1526](https://github.com/tardis-sn/tardis/pull/1526) enable manual trigger for docs (#1526) (@epassaro)
