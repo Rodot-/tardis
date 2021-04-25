@@ -1,6 +1,10 @@
 ## Change Log
 
-### upcoming (2021/04/18 23:54 +00:00)
+### upcoming (2021/04/25 23:55 +00:00)
+- [#1543](https://github.com/tardis-sn/tardis/pull/1543) Restructuring r_packet.py (#1543) (@andrewfullard)
+- [#1539](https://github.com/tardis-sn/tardis/pull/1539) Add ion contributions to SDEC plotter (#1539) (@MarkMageeAstro)
+- [#1531](https://github.com/tardis-sn/tardis/pull/1531) Fix issue 1485 SDEC label bugs (#1531) (@atharva-2001)
+- [#1493](https://github.com/tardis-sn/tardis/pull/1493) Added workflow for Documentation preview generation (#1493) (@aribalam)
 - [#1540](https://github.com/tardis-sn/tardis/pull/1540) fix version number displayed in docs (#1540) (@epassaro)
 - [#1538](https://github.com/tardis-sn/tardis/pull/1538) clean template files (#1538) (@epassaro)
 - [#1512](https://github.com/tardis-sn/tardis/pull/1512) Change the default number of interpolate_shells for the formal integral (#1512) (@chvogl)
