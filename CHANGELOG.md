@@ -1,6 +1,8 @@
 ## Change Log
 
-### upcoming (2021/04/25 23:55 +00:00)
+### upcoming (2021/05/02 23:55 +00:00)
+- [#1549](https://github.com/tardis-sn/tardis/pull/1549) Numba formal integral (#1549) (@Rodot-)
+- [#1546](https://github.com/tardis-sn/tardis/pull/1546) resolves issue #1370 bad YAML Output (#1546) (@atharva-2001)
 - [#1543](https://github.com/tardis-sn/tardis/pull/1543) Restructuring r_packet.py (#1543) (@andrewfullard)
 - [#1539](https://github.com/tardis-sn/tardis/pull/1539) Add ion contributions to SDEC plotter (#1539) (@MarkMageeAstro)
 - [#1531](https://github.com/tardis-sn/tardis/pull/1531) Fix issue 1485 SDEC label bugs (#1531) (@atharva-2001)
