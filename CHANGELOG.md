@@ -1,6 +1,8 @@
 ## Change Log
 
-### upcoming (2021/05/02 23:55 +00:00)
+### upcoming (2021/05/09 23:56 +00:00)
+- [#1434](https://github.com/tardis-sn/tardis/pull/1434) create update refdata pipeline (#1434) (@epassaro)
+- [#1554](https://github.com/tardis-sn/tardis/pull/1554) Adding Config Value Validation for Different Parameters via Config File (#1554) (@DhruvSondhi)
 - [#1549](https://github.com/tardis-sn/tardis/pull/1549) Numba formal integral (#1549) (@Rodot-)
 - [#1546](https://github.com/tardis-sn/tardis/pull/1546) resolves issue #1370 bad YAML Output (#1546) (@atharva-2001)
 - [#1543](https://github.com/tardis-sn/tardis/pull/1543) Restructuring r_packet.py (#1543) (@andrewfullard)
