@@ -1,6 +1,17 @@
 ## Change Log
 
-### upcoming (2021/05/09 23:56 +00:00)
+### v3.0.dev3952 (2021/05/14 17:44 +00:00)
+- [#1559](https://github.com/tardis-sn/tardis/pull/1559) Added support for passing Configuration object in run_tardis (#1559) (@aribalam)
+- [#1553](https://github.com/tardis-sn/tardis/pull/1553) Fixing Config Validator rst formatting (#1553) (@DhruvSondhi)
+- [#1551](https://github.com/tardis-sn/tardis/pull/1551) Adding Instructions for enabling virtual_packet_logging (#1551) (@DhruvSondhi)
+- [#1528](https://github.com/tardis-sn/tardis/pull/1528) Revising "Packet Propagation" page of physics docs (#1528) (@smithis7)
+- [#1569](https://github.com/tardis-sn/tardis/pull/1569) [build docs] fixing build problem (#1569) (@smithis7)
+
+### v3.0.dev3947 (2021/05/12 20:42 +00:00)
+- [#1566](https://github.com/tardis-sn/tardis/pull/1566) better handling of pickle5 backport (#1566) (@epassaro)
+- [#1562](https://github.com/tardis-sn/tardis/pull/1562) added symlinks for tardis_example.yml (#1562) (@parikshit14)
+
+### v3.0.dev3945 (2021/05/05 14:03 +00:00)
 - [#1434](https://github.com/tardis-sn/tardis/pull/1434) create update refdata pipeline (#1434) (@epassaro)
 - [#1554](https://github.com/tardis-sn/tardis/pull/1554) Adding Config Value Validation for Different Parameters via Config File (#1554) (@DhruvSondhi)
 - [#1549](https://github.com/tardis-sn/tardis/pull/1549) Numba formal integral (#1549) (@Rodot-)
