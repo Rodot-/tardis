@@ -1,5 +1,15 @@
 ## Change Log
 
+### v3.0.dev3959 (2021/05/21 18:44 +00:00)
+- [#1582](https://github.com/tardis-sn/tardis/pull/1582) Fixing `Team` Link redirection in Code Of Conduct (@DhruvSondhi)
+
+### v3.0.dev3957 (2021/05/20 19:27 +00:00)
+- [#1571](https://github.com/tardis-sn/tardis/pull/1571) Fix numba deprecation (#1571) (@KevinCawley)
+- [#1578](https://github.com/tardis-sn/tardis/pull/1578) minor changes to compare refdata pipeline (#1578) (@epassaro)
+- [#1557](https://github.com/tardis-sn/tardis/pull/1557) Changed Quickstart Example according to #1477 (#1557) (@aribalam)
+- [#1575](https://github.com/tardis-sn/tardis/pull/1575) Fixing virtual_packet_logging instructions for line info widget (#1575) (@DhruvSondhi)
+- [#1551](https://github.com/tardis-sn/tardis/pull/1551) Revert "Adding Instructions for enabling virtual_packet_logging (#1551)" (#1574) (@jaladh-singhal)
+
 ### v3.0.dev3952 (2021/05/14 17:44 +00:00)
 - [#1559](https://github.com/tardis-sn/tardis/pull/1559) Added support for passing Configuration object in run_tardis (#1559) (@aribalam)
 - [#1553](https://github.com/tardis-sn/tardis/pull/1553) Fixing Config Validator rst formatting (#1553) (@DhruvSondhi)
