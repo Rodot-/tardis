@@ -1,5 +1,12 @@
 ## Change Log
 
+### v3.0.dev3970 (2021/05/28 21:43 +00:00)
+- [#1570](https://github.com/tardis-sn/tardis/pull/1570) add fetch depth param to Azure template (#1570) (@epassaro)
+- [#1567](https://github.com/tardis-sn/tardis/pull/1567) review environment file (#1567) (@epassaro)
+- [#1584](https://github.com/tardis-sn/tardis/pull/1584) Making sponsors page of documentation (#1584) (@smithis7)
+- [#1577](https://github.com/tardis-sn/tardis/pull/1577) Fixing issues with `Citations` & `Label` references in Docs (@DhruvSondhi)
+- [#1581](https://github.com/tardis-sn/tardis/pull/1581) changes to badges (@epassaro)
+
 ### v3.0.dev3959 (2021/05/21 18:44 +00:00)
 - [#1582](https://github.com/tardis-sn/tardis/pull/1582) Fixing `Team` Link redirection in Code Of Conduct (@DhruvSondhi)
 
