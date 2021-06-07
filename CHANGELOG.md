@@ -1,5 +1,19 @@
 ## Change Log
 
+### v3.0.dev3983 (2021/06/04 16:50 +00:00)
+- [#1555](https://github.com/tardis-sn/tardis/pull/1555) Replacing the contents of the news section with TARDIS twitter feed (#1555) (@atharva-2001)
+- [#1610](https://github.com/tardis-sn/tardis/pull/1610) add token at checkout step (#1610) (@epassaro)
+- [#1594](https://github.com/tardis-sn/tardis/pull/1594) Fixing JSON Schema not Rendering Properly in the Documentation (#1594) (@DhruvSondhi)
+- [#1607](https://github.com/tardis-sn/tardis/pull/1607) SDEC Visibility Fix (#1607) (@atharva-2001)
+- [#1603](https://github.com/tardis-sn/tardis/pull/1603) change bot email (#1603) (@epassaro)
+- [#1601](https://github.com/tardis-sn/tardis/pull/1601) fixing doc build (#1601) (@smithis7)
+- [#1602](https://github.com/tardis-sn/tardis/pull/1602) add fetch depth param to changelog workflow (#1602) (@epassaro)
+- [#1588](https://github.com/tardis-sn/tardis/pull/1588) Added PR review checklist workflow (#1588) (@aribalam)
+- [#1592](https://github.com/tardis-sn/tardis/pull/1592) Flexible packet initial radius (#1592) (@andrewfullard)
+- [#1598](https://github.com/tardis-sn/tardis/pull/1598) Resolving warnings in ADS notebook (#1598) (@smithis7)
+- [#1596](https://github.com/tardis-sn/tardis/pull/1596) Fixing bibliography in documentation build (#1596) (@smithis7)
+- [#1590](https://github.com/tardis-sn/tardis/pull/1590) Fixing inconsistencies for `rst` formatting in Docs (Second Iteration) (#1590) (@DhruvSondhi)
+
 ### v3.0.dev3970 (2021/05/28 21:43 +00:00)
 - [#1570](https://github.com/tardis-sn/tardis/pull/1570) add fetch depth param to Azure template (#1570) (@epassaro)
 - [#1567](https://github.com/tardis-sn/tardis/pull/1567) review environment file (#1567) (@epassaro)
