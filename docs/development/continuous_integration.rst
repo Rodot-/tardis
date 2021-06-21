@@ -1,5 +1,4 @@
-.. include:: git_links.inc
-.. include:: azure_links.inc
+.. include:: links.inc
 
 **********************
 Continuous Integration
@@ -21,14 +20,18 @@ repository since Azure does not impose limits on LFS bandwith
 nor storage.
 
 **To clone this repository:**
+
 ::
+
   git clone https://tardis-sn@dev.azure.com/tardis-sn/TARDIS/_git/tardis-refdata
 
 **To download a LFS file trough HTTPS:**
+
 ::
+
   https://dev.azure.com/tardis-sn/TARDIS/_apis/git/repositories/tardis-refdata/items?path=atom_data/kurucz_cd23_chianti_H_He.h5&resolveLfs=true
 
-This mirror is automatically synced by `a GitHub workflow`_. If you want
+This mirror is automatically synced by `a GitHub workflow`. If you want
 to `update it manually`_, remember to set ``git config http.version HTTP/1.1``
 to avoid `error 413`_ while pushing large files.
 
@@ -59,12 +62,14 @@ First thing to do is telling the pipeline when it should run. In
 Azure, *trigger* (also known as the CI trigger) sets up the pipeline
 to run every time changes are pushed to a branch.
 ::
+
   trigger: 
     - master
 
 If some trigger is not specified then the default configuration
 is assumed.
 ::
+
   trigger:
     branches:
       include:
@@ -82,6 +87,7 @@ commits to a pull request.
 If you want to run a pipeline only manually set both triggers to
 *none*.
 ::
+
   trigger: none
 
   pr: none
@@ -113,7 +119,7 @@ Azure Pipelines supports three different ways to reference variables:
 can be used for a different purpose and has some limitations.
 
 .. image:: images/variables.png
-      :align: center
+    :align: center
 
 **What syntax should I use?** Use *macro syntax* if you are providing
 input for a task. Choose a *runtime expression* if you are working with
@@ -125,7 +131,9 @@ Define variables
 ================
 
 Usually, we define variables at the top of the YAML file.
+
 ::
+
   variables:
     my.var: 'foo'
 
@@ -140,7 +148,9 @@ while variables at the *job* level override variables at the *root*
 and *stage* level.
 
 Also, variables are available to scripts through environment variables.
-The name is upper-cased and ``.``  is replaced with ``_``. For example::
+The name is upper-cased and ``.``  is replaced with ``_``. For example
+::
+
   variables:
     my.var: 'foo'
 
@@ -151,6 +161,7 @@ The name is upper-cased and ``.``  is replaced with ``_``. For example::
 To set a variable from a script task, use the ``task.setvariable`` logging
 command.
 ::
+
   steps:
 
     - bash: |
@@ -188,6 +199,7 @@ You can organize your pipeline into jobs. Every pipeline has at least one job.
 A job is a series of steps that run sequentially as a unit. In other words,
 a job is the smallest unit of work that can be scheduled to run.
 ::
+
   jobs:
   - job: myJob
 
@@ -234,16 +246,17 @@ to start a new pipeline use::
   steps:
     - template: templates/default.yml
       parameters:
-        fetchRefdata: true
+        useMamba: true
 
 **List of template parameters:**
 
-- ``fetchRefdata``: fetch the ``tardis-refdata`` repository from Azure Repos
-  (default is *false*).
-- ``useMamba``: use the ``mamba`` package manager instead of ``conda``
-  (default is *false*). 
-- ``skipInstall``: does not create the TARDIS environment
-  (default is *false*).
+- ``fetchDepth`` (*int*): the depth of commits to fetch from ``tardis`` repository,
+  default is ``0`` (no limit).
+- ``fetchRefdata`` (*bool*): fetch the ``tardis-refdata`` repository from Azure Repos,
+  default is ``false``.
+- ``useMamba`` (*bool*): use the ``mamba`` package manager instead of ``conda``,
+  default is ``false``. 
+- ``skipInstall`` (*bool*): does not create the TARDIS environment, default is ``false``.
 
 **List of predefined custom variables:**
 
@@ -253,11 +266,17 @@ to start a new pipeline use::
 See the `Azure documentation section on templates`_ for more information.
 
 
-Documentation pipeline
-======================
+Documentation build pipeline
+============================
 
-Builds and deploys the TARDIS documentation website. Currently, we use
-GitHub Actions for this purpose.
+A GitHub Actions workflow that builds and deploys the TARDIS documentation website.
+
+
+Documentation preview pipeline
+==============================
+
+This workflow does not run on the main repository, just on forks.
+See the :ref:`Documentation Preview <doc-preview>` section for more information.
 
 
 Testing pipeline
@@ -290,17 +309,38 @@ Release pipeline
 Publishes a new release of TARDIS every sunday at 00:00 UTC. 
 
 
-Reference data pipeline
-=======================
+Compare reference data pipeline
+===============================
 
-Generates new reference data according to the changes present in the
-current pull request. Then, compares against reference data present in the
-head of ``tardis-refdata`` repository by running a notebook. Finally, uploads
-the rendered notebook to the pipeline results.
-
-To trigger this pipeline is necessary to leave a comment in the GitHub pull
-request.
+This pipeline compares two versions of the reference data. It's triggered manually via
+the Azure Pipelines web UI, or when a TARDIS contributor leaves the following comment
+on a pull request:
 ::
+
   /AzurePipelines run compare-refdata
 
 For brevity, you can comment using ``/azp`` instead of ``/AzurePipelines``.
+
+By default, generates new reference data for the ``HEAD`` of the pull request. Then, 
+compares against latest reference data stored in ``tardis-refdata`` repository. If
+you want to compare two different labels (SHAs, branches, tags, etc.) uncomment and
+set the ``ref1.hash`` and ``ref2.hash`` variables in 
+``.github/workflows/compare-refdata.yml`` on your pull request. For example:
+::
+
+  ref1.hash: 'upstream/pr/11'
+  ref2.hash: 'upstream/master'
+
+The web UI also allows to compare any version of the reference data by providing those
+variables at runtime, but the access to the dashboard is restricted to a small group
+of developers.
+
+.. warning:: If using the Azure dashboard, do not define ``ref1.hash`` and ``ref2.hash``
+          between quotation marks or **the pipeline will fail**. This does not apply for
+          the YAML file.
+
+Finally, the report is uploaded to the
+`OpenSupernova.org server <http://opensupernova.org/~azuredevops/files/refdata-results/>`_
+following the ``<pr>/<commit>`` folder structure. If the pipeline fails, also a report is 
+generated, but not necessarily gives useful debug information (depends on which step the
+pipeline has failed).
