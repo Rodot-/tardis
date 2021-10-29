@@ -49,10 +49,8 @@ def numba_formal_integral(
     """
     model, plasma, and estimator are the numba variants
     """
-    print("Prepping")
     R_ph = model.r_inner[0]  # make sure these are cgs
     size_line, size_shell = tau_sobolev.shape
-    #exp_tau = np.exp(-tau_sobolev.T.ravel())  # maybe make this 2D?
     
     exp_tau = np.zeros((size_shell, size_line), dtype=np.float64)
     exp_tau[::] = np.exp(-tau_sobolev.T) # maybe make this 2D?
@@ -73,26 +71,16 @@ def numba_formal_integral(
     size_z_grid =np.array([0]+[populate_z(model, pp[p_idx], z_grid[p_idx], shell_id_grid[p_idx]) for p_idx in range(1, N)])
     time_explosion = model.time_explosion
 
-    print("time explosion:", time_explosion)
-    print(size_line, size_shell)
-
     @cuda.jit
     def _wrapper(I_nu_grid, pp, z_grid, shell_id_grid, size_z_grid, line_list_nu, exp_tau, electron_density, Jred_lu, Jblue_lu, att_S_ul, inu):
-        '''will return a PxNU array of I_nu values to be integrated'''
-        # todo: add all the original todos
-        # Initialize the output which is shared among threads
-        #L = np.zeros(inu_size, dtype=np.float64)
-        # global read-only values
-        # done with instantiation
-        # now loop over wavelength in spectrum
+        '''will return a inu_size x N array of I_nu values to be integrated'''
 
-        nu_idx, p_idx = cuda.grid(2) # Should be inu_size x N-1
+        nu_idx, p_idx = cuda.grid(2) # Should be inu_size x N
         I_nu = 0.0
         if nu_idx >= inu_size or p_idx >= N-1:
             return # check for index out of range
         p_idx += 1
         # Outer loop
-        #I_nu = I_nu_grid[nu_idx, p_idx]
         escat_contrib = 0.0
         nu = inu[nu_idx]
         ### INNER LOOP
@@ -107,23 +95,14 @@ def numba_formal_integral(
         if p <= R_ph:
             I_nu += intensity_black_body_cuda(nu * z[0], iT)
 
+        # start tracking accumulated e-scattering optical depth
         # find first contributing lines
         nu_start = nu * z[0]
         idx_nu_start = line_search_cuda(line_list_nu, nu_start, size_line)
         offset = shell_id[0] * size_line
-        # start tracking accumulated e-scattering optical depth
         zstart = time_explosion / C_INV * (1.0 - z[0])
-        # Initialize "pointers"
 
 
-        pline = int(idx_nu_start)
-        pexp_tau = int(offset + idx_nu_start)
-        patt_S_ul = int(offset + idx_nu_start)
-        pJred_lu = int(offset + idx_nu_start)
-        pJblue_lu = int(offset + idx_nu_start)
-
-        # first contribution to integration on current p-ray
-        first = 1
         nu_end = nu * z[1]
         shell = shell_id[0]
         escat_op = electron_density[shell] * SIGMA_THOMSON
@@ -138,21 +117,12 @@ def numba_formal_integral(
                 * escat_op
                 * (Jblue_lu[shell, idx_nu_start] - I_nu)
                 )
-
-            #if escat_contrib < -I_nu:
-            #    j = idx_nu_start
-            #    i = 0
-            #    print(f"WARNING: escat_contrib={escat_contrib:.5E} after first boundary at nu_idx={nu_idx}, p_idx={p_idx}, j={j}, i={i}, nu={nu:.5E}, I_nu={I_nu:.5E}")
-            #    print(f"         zstart={zstart:.5E}, zend={zend:.5E}, Jred_lu[shell, j-1]={Jred_lu[shell, j-1]:.5E}, Jblue_lu[shell, j]={Jblue_lu[shell, j]:.5E}")
-            #    print(f"         escat_op={escat_op:.5E}, line_list_nu[j]={line_list_nu[j]:.5E}, shell={shell}, nu_end={nu_end:.5E}")
                   
             I_nu = (I_nu + escat_contrib) * exp_tau[shell, idx_nu_start] + att_S_ul[shell, idx_nu_start]
             escat_contrib = 0.0
             zstart = zend
             idx_nu_start += 1
 
-        #if I_nu < 0:
-        #    print(f"WARNING I_nu={I_nu:.5E} after first boundary at nu_idx={nu_idx}, p_idx={p_idx}")
         for j in range(idx_nu_start, size_line):
             idx_nu_start = j+1
             if line_list_nu[j] < nu_end:
@@ -176,9 +146,6 @@ def numba_formal_integral(
         escat_contrib += (zend - zstart) * escat_op * (Jkkp - I_nu)
         zstart = zend
       
-        #if I_nu < 0:
-        #    print(f"WARNING I_nu={I_nu:.5E} after first loop at nu_idx={nu_idx}, p_idx={p_idx}")
-        # The rest of the contributions
         for i in range(1, size_z - 1):
             shell = shell_id[i]
             escat_op = electron_density[shell] * SIGMA_THOMSON
@@ -199,10 +166,6 @@ def numba_formal_integral(
                 escat_contrib += (
                         (zend - zstart) * escat_op * (Jkkp - I_nu)
                         )
-                #if escat_contrib < -I_nu:
-                #    print(f"WARNING: escat_contrib={escat_contrib:.5E} at nu_idx={nu_idx}, p_idx={p_idx}, j={j}, i={i}, nu={nu:.5E}, I_nu={I_nu:.5E}")
-                #    print(f"         zstart={zstart:.5E}, zend={zend:.5E}, Jkkp={Jkkp:.5E}, Jred_lu[shell, j-1]={Jred_lu[shell, j-1]:.5E}, Jblue_lu[shell, j]={Jblue_lu[shell, j]:.5E}")
-                #    print(f"         escat_op={escat_op:.5E}, line_list_nu[j]={line_list_nu[j]:.5E}, shell={shell}, nu_end={nu_end:.5E}")
                 I_nu = (I_nu + escat_contrib) * exp_tau[shell, j] + att_S_ul[shell, j]
                 escat_contrib = 0.0
                 zstart = zend
@@ -214,283 +177,24 @@ def numba_formal_integral(
 
         I_nu *= p
         I_nu_grid[nu_idx, p_idx] = I_nu * 8 * M_PI * M_PI
-        #if I_nu < 0:
-        #    print(f"WARNING I_nu={I_nu:.5E} at nu_idx={nu_idx}, p_idx={p_idx}")
-        #    print(f"        p={p:.5E}")
        
-        '''
-        # loop over all interactions
-        for i in range(size_z - 1):
-            escat_op = electron_density[int(shell_id[i])] * SIGMA_THOMSON
-            nu_end = nu*z[i+1]
-            #nu_end_idx = reverse_binary_search_cuda(line_list_nu, nu_end, 0, len(line_list_nu)-1)
-            nu_end_idx = line_search_cuda(line_list_nu, nu_end, size_line)
-            for _ in range(max(nu_end_idx - pline, 0)):
-
-                # calculate e-scattering optical depth to next resonance point
-                zend = (
-                    time_explosion
-                    / C_INV
-                    * (1.0 - line_list_nu[pline] / nu)
-                )  # check
-
-                if first == 1:
-                    # first contribution to integration
-                    # NOTE: this treatment of I_nu_b (given
-                    #   by boundary conditions) is not in Lucy 1999;
-                    #   should be re-examined carefully
-                    escat_contrib += (
-                        (zend - zstart)
-                        * escat_op
-                        * (Jblue_lu[pJblue_lu] - I_nu)
-                    )
-                    first = 0
-                else:
-                    # Account for e-scattering, c.f. Eqs 27, 28 in Lucy 1999
-                    Jkkp = 0.5 * (Jred_lu[pJred_lu] + Jblue_lu[pJblue_lu])
-                    escat_contrib += (
-                        (zend - zstart) * escat_op * (Jkkp - I_nu)
-                    )
-                    # this introduces the necessary ffset of one element between
-                    # pJblue_lu and pJred_lu
-                    pJred_lu += 1
-                I_nu += escat_contrib
-                # // Lucy 1999, Eq 26
-                I_nu *= exp_tau[pexp_tau]
-                I_nu += att_S_ul[patt_S_ul]
-
-                # // reset e-scattering opacity
-                escat_contrib = 0
-                zstart = zend
-
-                pline += 1
-                pexp_tau += 1
-                patt_S_ul += 1
-                pJblue_lu += 1
-
-            # calculate e-scattering optical depth to grid cell boundary
-
-            Jkkp = 0.5 * (Jred_lu[pJred_lu] + Jblue_lu[pJblue_lu])
-            zend = (
-                time_explosion / C_INV * (1.0 - nu_end / nu)
-            )  # check
-            escat_contrib += (
-                (zend - zstart) * escat_op * (Jkkp - I_nu)
-            )
-            zstart = zend
-
-            # advance pointers
-            direction = int((shell_id[i + 1] - shell_id[i]) * size_line)
-            pexp_tau += direction
-            patt_S_ul += direction
-            pJred_lu += direction
-            pJblue_lu += direction
-        I_nu *= p
-        I_nu_grid[nu_idx, p_idx] = I_nu * 8 * M_PI * M_PI
-        '''
-    print("This many iterations!:",N*inu_size)
     I_nu_grid = np.zeros((inu_size, N), dtype=np.float64)
     threadsperblock = (16, 8)
     blockspergrid_x = math.ceil(I_nu_grid.shape[0] / threadsperblock[0])
     blockspergrid_y = math.ceil(I_nu_grid.shape[1] / threadsperblock[1])
 
     blockspergrid = (blockspergrid_x, blockspergrid_y)
-    print(f"Jitting and Running [{blockspergrid}, {threadsperblock}]")
     _wrapper[blockspergrid, threadsperblock](
             I_nu_grid, pp, z_grid, shell_id_grid, 
             size_z_grid, line_list_nu, exp_tau, 
             electron_density, Jred_lu, Jblue_lu, 
             att_S_ul, inu)
-    print("Integrating")
-    #_wrapper[blockspergrid, threadsperblock](I_nu_grid)
     L = np.zeros(inu_size, dtype=np.float64)
-    #print(size_z_grid)
-    #print(list(zip(*np.where(I_nu_grid < -1e10)))[:10])
     for i in range(inu_size):
         L[i] = trapezoid_integration(I_nu_grid[i], R_max/N)
-    print("Done")
-    #print(I_nu_grid[7])
-    #print(z_grid[360:370])
-    return L
-    #    L[nu_idx] = 8 * M_PI * M_PI * trapezoid_integration(I_nu, R_max / N)
-
-    #return L
-
-
-
-
-@njit(**njit_dict)
-def numba_formal_integral_old(
-    model,
-    plasma,
-    iT,
-    inu,
-    inu_size,
-    att_S_ul,
-    Jred_lu,
-    Jblue_lu,
-    tau_sobolev,
-    electron_density,
-    N,
-):
-    """
-    model, plasma, and estimator are the numba variants
-    """
-    # todo: add all the original todos
-    # Initialize the output which is shared among threads
-    L = np.zeros(inu_size, dtype=np.float64)
-    # global read-only values
-    size_line, size_shell = tau_sobolev.shape
-    size_tau = size_line * size_shell
-    R_ph = model.r_inner[0]  # make sure these are cgs
-    R_max = model.r_outer[size_shell - 1]
-    pp = np.zeros(N, dtype=np.float64)  # check
-    exp_tau = np.zeros(size_tau, dtype=np.float64)
-    exp_tau = np.exp(-tau_sobolev.T.ravel())  # maybe make this 2D?
-    pp[::] = calculate_p_values(R_max, N)
-    line_list_nu = plasma.line_list_nu
-    # done with instantiation
-    # now loop over wavelength in spectrum
-    for nu_idx in prange(inu_size):
-        I_nu = np.zeros(N, dtype=np.float64)
-        z = np.zeros(2 * size_shell, dtype=np.float64)
-        shell_id = np.zeros(2 * size_shell, dtype=np.int64)
-        offset = 0
-        size_z = 0
-        idx_nu_start = 0
-        direction = 0
-        first = 0
-        i = 0
-        p = 0.0
-        nu_start = 0.0
-        nu_end = 0.0
-        nu = 0.0
-        zstart = 0.0
-        zend = 0.0
-        escat_contrib = 0.0
-        escat_op = 0.0
-        Jkkp = 0.0
-        pexp_tau = 0
-        patt_S_ul = 0
-        pJred_lu = 0
-        pJblue_lu = 0
-        pline = 0
-
-        nu = inu[nu_idx]
-        # now loop over discrete values along line
-        for p_idx in range(1, N):
-            escat_contrib = 0
-            p = pp[p_idx]
-
-            # initialize z intersections for p values
-            size_z = populate_z(model, p, z, shell_id)  # check returns
-            # initialize I_nu
-            if p <= R_ph:
-                I_nu[p_idx] = intensity_black_body(nu * z[0], iT)
-            else:
-                I_nu[p_idx] = 0
-
-            # find first contributing lines
-            nu_start = nu * z[0]
-            nu_end = nu * z[1]
-            idx_nu_start = line_search(plasma.line_list_nu, nu_start, size_line)
-            offset = shell_id[0] * size_line
-            # start tracking accumulated e-scattering optical depth
-            zstart = model.time_explosion / C_INV * (1.0 - z[0])
-            # Initialize "pointers"
-            pline = int(idx_nu_start)
-            pexp_tau = int(offset + idx_nu_start)
-            patt_S_ul = int(offset + idx_nu_start)
-            pJred_lu = int(offset + idx_nu_start)
-            pJblue_lu = int(offset + idx_nu_start)
-
-            # flag for first contribution to integration on current p-ray
-            first = 1
-            nu_ends = nu * z[1:]
-            nu_ends_idxs = size_line - np.searchsorted(
-                line_list_nu[::-1], nu_ends, side="right"
-            )
-            # loop over all interactions
-            for i in range(size_z - 1):
-                escat_op = electron_density[int(shell_id[i])] * SIGMA_THOMSON
-                nu_end = nu_ends[i]
-                nu_end_idx = nu_ends_idxs[i]
-                for _ in range(max(nu_end_idx - pline, 0)):
-
-                    # calculate e-scattering optical depth to next resonance point
-                    zend = (
-                        model.time_explosion
-                        / C_INV
-                        * (1.0 - line_list_nu[pline] / nu)
-                    )  # check
-
-                    if first == 1:
-                        # first contribution to integration
-                        # NOTE: this treatment of I_nu_b (given
-                        #   by boundary conditions) is not in Lucy 1999;
-                        #   should be re-examined carefully
-                        escat_contrib += (
-                            (zend - zstart)
-                            * escat_op
-                            * (Jblue_lu[pJblue_lu] - I_nu[p_idx])
-                        )
-                        first = 0
-                    else:
-                        # Account for e-scattering, c.f. Eqs 27, 28 in Lucy 1999
-                        Jkkp = 0.5 * (Jred_lu[pJred_lu] + Jblue_lu[pJblue_lu])
-                        escat_contrib += (
-                            (zend - zstart) * escat_op * (Jkkp - I_nu[p_idx])
-                        )
-                        # this introduces the necessary ffset of one element between
-                        # pJblue_lu and pJred_lu
-                        pJred_lu += 1
-                    #if escat_contrib < -I_nu[p_idx]:
-                    #    print(escat_contrib, I_nu[p_idx])
-                    I_nu[p_idx] += escat_contrib
-                    # // Lucy 1999, Eq 26
-                    I_nu[p_idx] *= exp_tau[pexp_tau]
-                    I_nu[p_idx] += att_S_ul[patt_S_ul]
-
-                    # // reset e-scattering opacity
-                    escat_contrib = 0
-                    zstart = zend
-
-                    pline += 1
-                    pexp_tau += 1
-                    patt_S_ul += 1
-                    pJblue_lu += 1
-
-                # calculate e-scattering optical depth to grid cell boundary
-
-                Jkkp = 0.5 * (Jred_lu[pJred_lu] + Jblue_lu[pJblue_lu])
-                zend = (
-                    model.time_explosion / C_INV * (1.0 - nu_end / nu)
-                )  # check
-                escat_contrib += (
-                    (zend - zstart) * escat_op * (Jkkp - I_nu[p_idx])
-                )
-                zstart = zend
-
-                # advance pointers
-                direction = int((shell_id[i + 1] - shell_id[i]) * size_line)
-                pexp_tau += direction
-                patt_S_ul += direction
-                pJred_lu += direction
-                pJblue_lu += direction
-            I_nu[p_idx] *= p
-        L[nu_idx] = 8 * M_PI * M_PI * trapezoid_integration(I_nu, R_max / N)
 
     return L
 
-
-integrator_spec = [
-    ("model", NumbaModel.class_type.instance_type),
-    ("plasma", NumbaPlasma.class_type.instance_type),
-    ("points", int64),
-]
-
-
-#@jitclass(integrator_spec)
 class NumbaFormalIntegrator(object):
     """
     Helper class for performing the formal integral
@@ -651,10 +355,10 @@ class FormalIntegrator(object):
         model = self.model
         runner = self.runner
 
-        #macro_ref = self.atomic_data.macro_atom_references
         macro_ref = self.atomic_data.macro_atom_references
-        #macro_data = self.atomic_data.macro_atom_data
-        macro_data = self.original_plasma.macro_atom_data
+        #macro_ref = self.atomic_data.macro_atom_references
+        macro_data = self.atomic_data.macro_atom_data
+        #macro_data = self.original_plasma.macro_atom_data
 
         no_lvls = len(self.atomic_data.levels)
         no_shells = len(model.w)
@@ -1027,30 +731,6 @@ def reverse_binary_search_cuda(x, x_insert, imin, imax):
         result = imin
     return result
 
-#Was no parallel
-@cuda.jit(device=True)
-def _reverse_binary_search_cuda(x, x_insert, imin, imax):
-    """
-    Look for a place to insert a value in an inversely sorted float array.
-
-    Parameters
-    ----------
-    x : np.ndarray([:], float64)
-    x_insert : float64
-    imin : int
-        Lower bound
-    imax : int
-        Upper bound
-
-    Returns
-    -------
-    int
-        What is this int?
-    """
-    if (x_insert > x[imin]) or (x_insert < x[imax]):
-        raise BoundsError  # check
-    return len(x) - 1 - cuda_searchsorted_value_right(x[::-1], x_insert)
-
 @cuda.jit(device=True)
 def intensity_black_body_cuda(nu, T):
     """
@@ -1071,52 +751,4 @@ def intensity_black_body_cuda(nu, T):
     beta_rad = 1 / (KB_CGS * T)
     coefficient = 2 * H_CGS * C_INV * C_INV
     return coefficient * nu * nu * nu / (math.exp(H_CGS * nu * beta_rad) - 1)
-
-@cuda.jit(device=True)
-def cuda_searchsorted_value_right(arr, val):
-    """
-    Find indicies where elements should be inserted
-    to maintain order
-    Find the indices into a sorted array a such that,
-    if the corresponding elements in v were inserted
-    before the indices on the right, the order of a
-    would be preserved.
-    Parameters
-    ----------
-    arr : 1-D array_like
-    val :
-        Value to be inserted into arr
-    Returns
-    -------
-    int
-        location of suitable index
-    """
-    n = len(arr)
-    lo = 0
-    hi = n
-    while hi > lo:
-        mid = (lo + hi) >> 1
-        if arr[mid] <= val:
-            #mid is too low of an index, go higher
-            lo = mid + 1
-        else:
-            #mid is too high of an index, go down some
-            hi = mid
-    return lo
-
-@cuda.jit
-def cuda_searchsorted(arr, values, output):
-    """
-    Parameters
-    ----------
-    arr : 1-D array-like
-    values : 1-D array-like
-    output : 1-D array-like
-        Results of the function being tested given the arr and values
-    """
-
-    x = cuda.grid(1)
-    value = values[x]
-    result = cuda_searchsorted_value_right(arr, value)
-    cuda.atomic.add(output, x, result)
 
