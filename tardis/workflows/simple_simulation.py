@@ -37,7 +37,7 @@ class SimpleSimulation(WorkflowLogging):
         atom_data = self._get_atom_data(configuration)
 
         # set up states and solvers
-        self.simulation_state = SimulationState.from_config(
+        self.simulation_state = SimulationState.from_csvy(
             configuration,
             atom_data=atom_data,
         )
